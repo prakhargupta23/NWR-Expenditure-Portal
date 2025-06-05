@@ -1,0 +1,26 @@
+/* Add this to your CSS file */
+
+/* Default styles for larger screens */
+.toggleButtonGroupContainer {
+  display: flex;
+  flex-direction: row; /* buttons side by side */
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.mainContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Media query for screens smaller than 1202px */
+@media screen and (max-width: 1202px) {
+  .mainContainer {
+    height: "auto";
+  }
+  .toggleButtonGroupContainer {
+    display: flex;
+    flex-direction: column; /* stack buttons vertically */
+    flex-wrap: wrap;
+  }
+}

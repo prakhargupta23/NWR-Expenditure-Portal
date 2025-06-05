@@ -1,0 +1,34 @@
+/* App.css */
+.client-section {
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.client-header {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.client-data {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.client-data th,
+.client-data td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.client-data th {
+  background-color: #e0e0e0;
+}
+
+.day-table {
+  min-width: 150px; /* Adjust as needed */
+}
