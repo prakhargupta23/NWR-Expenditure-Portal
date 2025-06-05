@@ -49,7 +49,7 @@ const getdata = async (file: File, documentType: keyof typeof documentKeys, rowI
     const answer = await fetchWrapper.post(`${config.apiUrl}/api/extract-expenditure-data`, data);
     //get-report-data,extract-expenditure-data
     console.log("gpt answer", answer);
-    return answer.Rate;
+    return answer?"success" : "error";
   } catch (err) {
     console.error("Fetch error:", err);
     throw err;
