@@ -95,6 +95,7 @@ export default function ExpenditureBar({
                     ><MenuIcon/></IconButton>
                 ):(
                     <Box sx={{display:"flex",alignItems: "center"}}>
+                        {/* Commenting out extra buttons
                         {extraButton === false ? (
                             <>
                             {deleteLoading ? (
@@ -111,6 +112,7 @@ export default function ExpenditureBar({
                             <PDFUploadButton />
                             </>
                         ):null}
+                        */}
                         <img
                             src={require("../assets/logo.png")}
                             alt="railway"

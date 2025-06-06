@@ -78,7 +78,7 @@ export default function LeftDocumentSection() {
         ModificationAdvice: row.ModificationAdvice,
         PurchaseOrder: row.PurchaseOrder,
       }));
-      console.log("do wit data",processedData)
+      console.log("",processedData)
       setRows(processedData);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -89,7 +89,7 @@ export default function LeftDocumentSection() {
 
   const addNewRow = () => {
     const newRow: DocumentRow = {
-      SNo: Date.now(),
+      SNo: Date.now() % 2147483647,
       ReceiptNote: null,
       TaxInvoice: null,
       GSTInvoice: null,
@@ -199,16 +199,16 @@ export default function LeftDocumentSection() {
     event.target.value = "";
   };
 
-  const deleteRow = async (rowId: number) => {
-    try {
-      // Remove from backend
-      await expenditureService.updateExpenditureData({ id: rowId, deleted: true });
-      // Update UI
-      setRows(rows.filter(row => row["SNo"] !== rowId));
-    } catch (error) {
-      console.error('Error deleting row:', error);
-    }
-  };
+  // const deleteRow = async (rowId: number) => {
+  //   try {
+  //     // Remove from backend
+  //     await expenditureService.updateExpenditureData({ id: rowId, deleted: true });
+  //     // Update UI
+  //     setRows(rows.filter(row => row["SNo"] !== rowId));
+  //   } catch (error) {
+  //     console.error('Error deleting row:', error);
+  //   }
+  // };
 
   const getVerificationIcon = (status: string) => {
     switch (status) {
@@ -242,70 +242,102 @@ export default function LeftDocumentSection() {
         [row.SNo]: true
       }));
 
+      console.log("Starting verification for row:", row.SNo);
       const response = await expenditureService.reportVerification(row);
-      console.log("verification response leftsectiondocument", response);
+      console.log("Verification response:", response);
       
       // Ensure we're handling the response properly
       let status: "approved" | "rejected" = "rejected";
       let reason = '';
 
-      if (typeof response === 'object' && response !== null) {
-        if ('status' in response) {
-          status = response.status === 'passed' ? 'approved' : 'rejected';
+      if (response) {
+        // Check the status from the response object
+        status = response.Status == "approved" || response.Status == "Approved" ? "approved" : "rejected";
+        console.log("Determined status:", status,response.Status);
+        
+        // Get the reason from the response object
+        console.log("Response reason:", response.Reason);
+        if (response.Reason) {
+          reason = response.Reason;
+          console.log("Verification reason:", reason);
         }
-        if ('reason' in response) {
-          reason = typeof response.reason === 'string' ? response.reason : JSON.stringify(response.reason);
-        } else if ('issues' in response) {
-          reason = Array.isArray(response.issues) 
-            ? response.issues.join(', ') 
-            : JSON.stringify(response.issues);
-        }
-      } else if (typeof response === 'string') {
+
+        const updatedRow: DocumentRow = {
+          ...row,
+          Status: status,
+          Remark: reason,
+          VerificationTime: formatIndianDateTime(new Date()),
+          AuthorizationCommittee: "System"
+        };
+
+        console.log("Preparing to update database with row:", {
+          SNo: updatedRow.SNo,
+          Status: updatedRow.Status,
+          Reason: updatedRow.Remark
+        });
+
         try {
-          const parsedResponse = JSON.parse(response);
-          status = parsedResponse.status === 'passed' ? 'approved' : 'rejected';
-          reason = parsedResponse.reason || '';
-        } catch {
-          reason = response;
+          // First update the database
+          const dbResponse = await expenditureService.updateExpenditureData(updatedRow);
+          
+          if (!dbResponse || !dbResponse.success) {
+            throw new Error(dbResponse?.message || 'Database update failed');
+          }
+          
+          console.log("Database update successful:", dbResponse);
+
+          // Then update the UI
+          setRows(rows.map(r => r.SNo === row.SNo ? updatedRow : r));
+          
+          // Finally reload data to ensure consistency
+          console.log("Reloading data from database...");
+          await fetchExpenditureData();
+          
+          console.log("Verification and database update completed successfully for row:", row.SNo);
+        } catch (dbError) {
+          console.error("Database update failed:", dbError);
+          // Update UI with database error
+          const dbErrorRow: DocumentRow = {
+            ...row,
+            Status: 'rejected' as const,
+            Remark: `Database update failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
+            VerificationTime: formatIndianDateTime(new Date()),
+            AuthorizationCommittee: "System"
+          };
+          
+          // Update UI to show database error
+          setRows(rows.map(r => r.SNo === row.SNo ? dbErrorRow : r));
+          
+          // Try to save the error state to database
+          try {
+            await expenditureService.updateExpenditureData(dbErrorRow);
+            console.log("Error state saved to database");
+          } catch (finalError) {
+            console.error("Failed to save error state to database:", finalError);
+          }
         }
       }
-
-      const updatedRow: DocumentRow = {
-        ...row,
-        Status: status,
-        Remark: reason,
-        VerificationTime: formatIndianDateTime(new Date())
-      };
-
-      // Update the row in the UI
-      setRows(rows.map(r => r.SNo === row.SNo ? updatedRow : r));
-      
-      // Update the backend with the verification results
-      await expenditureService.updateExpenditureData(updatedRow);
-      
-      // Reload data from backend to ensure consistency
-      await fetchExpenditureData();
-      
-      // Optionally show a success message
-      console.log("Verification completed:", updatedRow);
     } catch (error) {
-      console.error("Error verifying row:", error);
-      // Update row with error status
+      console.error("Error during verification:", error);
+      
       const errorRow: DocumentRow = {
         ...row,
         Status: 'rejected' as const,
-        Remark: error instanceof Error ? error.message : 'Verification failed',
-        VerificationTime: formatIndianDateTime(new Date())
+        Remark: `Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        VerificationTime: formatIndianDateTime(new Date()),
+        AuthorizationCommittee: "System"
       };
       
-      // Update UI with error state
+      // Update UI with verification error
       setRows(rows.map(r => r.SNo === row.SNo ? errorRow : r));
       
-      // Update backend with error state
-      await expenditureService.updateExpenditureData(errorRow);
-      
-      // Reload data from backend
-      await fetchExpenditureData();
+      // Try to save the error state to database
+      try {
+        await expenditureService.updateExpenditureData(errorRow);
+        console.log("Error state saved to database");
+      } catch (dbError) {
+        console.error("Failed to save error state to database:", dbError);
+      }
     } finally {
       // Clear loading state for this row verification
       setVerifyingRows(prev => ({

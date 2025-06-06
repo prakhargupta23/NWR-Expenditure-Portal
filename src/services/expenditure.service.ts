@@ -49,7 +49,7 @@ const getdata = async (file: File, documentType: keyof typeof documentKeys, rowI
     const answer = await fetchWrapper.post(`${config.apiUrl}/api/extract-expenditure-data`, data);
     //get-report-data,extract-expenditure-data
     console.log("gpt answer", answer);
-    return answer.Rate;
+    return answer?"success" : "error";
   } catch (err) {
     console.error("Fetch error:", err);
     throw err;
@@ -74,6 +74,7 @@ export const expenditureService = {
   getExpenditureData: async () => {
     try {
       const response = await axios.get(`${config.apiUrl}/api/get-expditure-data`);
+      console.log(`hello${config.apiUrl}/api/get-expditure-data`)
       //get-basic-data,get-expenditure-data
       console.log("fetched data",response.data)
       return response.data;
@@ -143,6 +144,7 @@ export const expenditureService = {
         }
       }
       ///update-comment,expenditure-data-verify
+      console.log("calling backend for verification", formData);
       const response = await axios.post(
         `${config.apiUrl}/api/expenditure-data-verify`, 
         formData,
