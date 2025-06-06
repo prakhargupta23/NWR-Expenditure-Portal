@@ -88,7 +88,13 @@ export default function ExpenditureBar({
                     )}
                 </Box>
                 {/* Right side */}
-                
+                {isSmallScreen?(
+                    <IconButton
+                    sx={{color: "white"}}
+                    onClick={()=>setDrawerOpen(true)}
+                    ><MenuIcon/></IconButton>
+                ):(
+                    <Box sx={{display:"flex",alignItems: "center"}}>
                         <img
                             src={require("../assets/logo.png")}
                             alt="railway"
