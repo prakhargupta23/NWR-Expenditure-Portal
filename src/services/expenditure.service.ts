@@ -74,6 +74,7 @@ export const expenditureService = {
   getExpenditureData: async () => {
     try {
       const response = await axios.get(`${config.apiUrl}/api/get-expditure-data`);
+      console.log(`hello${config.apiUrl}/api/get-expditure-data`)
       //get-basic-data,get-expenditure-data
       console.log("fetched data",response.data)
       return response.data;
@@ -143,6 +144,7 @@ export const expenditureService = {
         }
       }
       ///update-comment,expenditure-data-verify
+      console.log("calling backend for verification", formData);
       const response = await axios.post(
         `${config.apiUrl}/api/expenditure-data-verify`, 
         formData,
