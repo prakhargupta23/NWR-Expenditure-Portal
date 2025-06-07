@@ -242,30 +242,30 @@ export default function LeftDocumentSection() {
         [row.SNo]: true
       }));
 
-      console.log("Starting verification for row:", row.SNo);
+      console.log("Starting verification for row:", row);
       const response = await expenditureService.reportVerification(row);
       console.log("Verification response:", response);
       
       // Ensure we're handling the response properly
       let status: "approved" | "rejected" = "rejected";
-      let reason = '';
+      let formattedRemark = '';
 
       if (response) {
         // Check the status from the response object
-        status = response.Status == "approved" || response.Status == "Approved" ? "approved" : "rejected";
-        console.log("Determined status:", status,response.Status);
+        status = response.Status === "approved" || response.Status === "Approved" ? "approved" : "rejected";
+        console.log("Determined status:", status, response.Status);
         
-        // Get the reason from the response object
-        console.log("Response reason:", response.Reason);
-        if (response.Reason) {
-          reason = response.Reason;
-          console.log("Verification reason:", reason);
+        // Format the remarks as bulleted points if Results array exists
+        if (response.Results && Array.isArray(response.Results)) {
+          formattedRemark = response.Results.map((result: string) => `• ${result}`).join('\n');
+        } else if (response.Reason) {
+          formattedRemark = response.Reason;
         }
 
         const updatedRow: DocumentRow = {
           ...row,
           Status: status,
-          Remark: reason,
+          Remark: formattedRemark,
           VerificationTime: formatIndianDateTime(new Date()),
           AuthorizationCommittee: "System"
         };
@@ -456,16 +456,6 @@ export default function LeftDocumentSection() {
                 }}>
                   Status
                 </Box>
-                {/* Verified At Header */}
-                <Box sx={{
-                  width: "150px",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  Verified At
-                </Box>
                 {/* Committee Header */}
                 <Box sx={{
                   width: "150px",
@@ -488,7 +478,27 @@ export default function LeftDocumentSection() {
                      {type}
                    </Box>
                  ))}
-                 {/* Remarks Header */}
+                {/* Action Header */}
+                <Box sx={{
+                  width: "90px",
+                  textAlign: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  flexShrink: 0
+                }}>
+                  Action
+                </Box>
+                {/* Verified At Header */}
+                <Box sx={{
+                  width: "150px",
+                  textAlign: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  flexShrink: 0
+                }}>
+                  Verified At
+                </Box>
+                {/* Remarks Header */}
                 <Box sx={{
                   width: "350px",
                   textAlign: "center",
@@ -558,18 +568,6 @@ export default function LeftDocumentSection() {
                   </Tooltip>
                 </Box>
 
-                {/* Verification Time Column */}
-                <Box sx={{ 
-                  width: "150px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  color: "white"
-                }}>
-                  {row.VerificationTime || "-"}
-                </Box>
-
                 {/* Authorization Committee Column */}
                 <Box sx={{ 
                   width: "150px",
@@ -634,18 +632,47 @@ export default function LeftDocumentSection() {
                   );
                 })}
 
-                {/* System Remark Column */}
+                {/* Verify Button */}
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    minWidth: "90px"
+                  }}
+                  onClick={() => handleVerify(row)}
+                  disabled={row.Status !== "pending" || verifyingRows[row.SNo]}
+                >
+                  {verifyingRows[row.SNo] ? "Verifying..." : "Verify"}
+                </Button>
+
+                {/* Verification Time Column */}
                 <Box sx={{ 
-                  width: "350px",
+                  width: "150px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
+                  color: "white"
+                }}>
+                  {row.VerificationTime || "-"}
+                </Box>
+
+                {/* System Remark Column */}
+                <Box sx={{ 
+                  width: "350px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  flexShrink: 0,
                   color: "white",
                   fontStyle: row.Remark ? "normal" : "italic",
-                  fontSize: "0.6rem",
+                  fontSize: "0.8rem",
                   paddingTop: "5px",
-                  maxHeight: "80px",
+                  maxHeight: "120px",
                   overflow: "auto",
                   "&::-webkit-scrollbar": {
                     width: "6px",
@@ -662,26 +689,11 @@ export default function LeftDocumentSection() {
                   wordBreak: "break-word",
                   backgroundColor: "rgba(0, 0, 0, 0.2)",
                   borderRadius: "4px",
-                  margin: "0 8px"
+                  margin: "0 8px",
+                  whiteSpace: "pre-line"
                 }}>
                   {row.Remark || "Pending review"}
                 </Box>
-                <Box sx={{ width: 24 }} /> {/* Space after remark */}
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
-                  sx={{
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    minWidth: "90px"
-                  }}
-                  onClick={() => handleVerify(row)}
-                  disabled={row.Status !== "pending" || verifyingRows[row.SNo]}
-                >
-                  {verifyingRows[row.SNo] ? "Verifying..." : "Verify"}
-                </Button>
               </Box>
             ))}
           </Box>
