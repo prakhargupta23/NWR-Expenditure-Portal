@@ -25,7 +25,7 @@ interface DocumentRow {
   TaxInvoice: string | null;
   GSTInvoice: string | null;
   ModificationAdvice: string | null;
-  // InspectionCertificate: string | null;
+  InspectionCertificate: string | null;
   PurchaseOrder: string | null;
   Status: "pending" | "approved" | "rejected";
   VerificationTime: string;
@@ -38,11 +38,13 @@ const documentTypes = [
   "Receipt Note",
   "Tax Invoice",
   "GST Invoice",
-  "Modification advice",
-  "Purchase Order"
+  "Modification Advice",
+  "Purchase Order",
+  "Inspection Certificate",
+  
 ];
 
-type DocumentType = 'ReceiptNote' | 'TaxInvoice' | 'GSTInvoice' | 'ModificationAdvice' | 'PurchaseOrder';
+type DocumentType = 'ReceiptNote' | 'TaxInvoice' | 'GSTInvoice' | 'ModificationAdvice' | 'PurchaseOrder' | 'InspectionCertificate';
 
 export default function LeftDocumentSection() {
   const [rows, setRows] = useState<DocumentRow[]>([]);
@@ -65,20 +67,19 @@ export default function LeftDocumentSection() {
       // Process the data to ensure all document fields are properly handled
       const processedData = data.map((row: any) => ({
         ...row,
-        // Ensure all document fields are either base64 strings or null
         SNo: row.SNo,
         AuthorizationCommittee: row.AuthorizationCommittee,
         VerificationTime: row.VerificationTime,
         Status:row.Status,
         Remark: row.Remark,
         ReceiptNote: row.ReceiptNote,
-        // InspectionCertificate: row.InspectionCertificate,
         TaxInvoice: row.TaxInvoice,
         GSTInvoice: row.GSTInvoice,
         ModificationAdvice: row.ModificationAdvice,
         PurchaseOrder: row.PurchaseOrder,
+        InspectionCertificate: row.InspectionCertificate,
       }));
-      console.log("",processedData)
+      console.log("Fetched data",processedData)
       setRows(processedData);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -94,8 +95,8 @@ export default function LeftDocumentSection() {
       TaxInvoice: null,
       GSTInvoice: null,
       ModificationAdvice: null,
-      // InspectionCertificate: null,
       PurchaseOrder: null,
+      InspectionCertificate: null,
       Status: "pending" as const,
       VerificationTime: "",
       AuthorizationCommittee: "",
@@ -103,34 +104,6 @@ export default function LeftDocumentSection() {
     };
     setRows([...rows, newRow]);
   };
-
-  // Function to save a row to the backend (insert or update)
-  // const saveRowToBackend = async (row: DocumentRow) => {
-  //   try {
-  //     // Assuming updateExpenditureData handles both insert (no id) and update (with id)
-  //     const result = await expenditureService.updateExpenditureData(row);
-  //     console.log("Save row result:", result);
-  //     // If it was an insert, the result might contain the new ID from the database
-  //     const resultData = result as any; // Cast to any to bypass linter error
-  //     if (typeof resultData === 'object' && resultData !== null && resultData.success && resultData["SNo"] && !row["SNo"]) {
-  //       // Update the local state with the new ID if it was an insert
-  //       setRows(prevRows => prevRows.map(prevRow => 
-  //         // Find the temporary row by matching other properties if ID is not available yet, 
-  //         // or if a temporary ID was used, match and replace with the returned ID
-  //         // A more robust approach might involve a temporary ID or matching by unique properties
-  //         // For simplicity here, we'll rely on the backend returning the full updated row or new row with ID
-  //         prevRow["SNo"] === row["SNo"] ? { ...prevRow, id: resultData["SNo"] } : prevRow
-  //       ));
-  //     } else if (typeof resultData === 'object' && resultData !== null && resultData.success && row["SNo"]) {
-  //       // Update successful for existing row, no need to update ID
-  //       console.log(`Row with ID ${row["SNo"]} updated successfully.`);
-  //     }
-  //     return result;
-  //   } catch (error) {
-  //     console.error("Error saving row to backend:", error);
-  //     throw error;
-  //   }
-  // };
 
   const handleFileUpload = async (
     rowId: number,
@@ -582,7 +555,7 @@ export default function LeftDocumentSection() {
 
                 {/* File Upload Columns */}
                 {Object.entries(row).filter(([key]) => 
-                  ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'PurchaseOrder', 'ModificationAdvice'].includes(key)
+                  ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'ModificationAdvice', 'PurchaseOrder', 'InspectionCertificate'].includes(key)
                 ).map(([key, file]) => {
                   const isNull = file === null;
                   const isUploading = uploadingFiles[`${row.SNo}-${key}`];
