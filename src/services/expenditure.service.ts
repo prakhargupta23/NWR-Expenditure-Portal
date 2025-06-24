@@ -96,7 +96,7 @@ export const expenditureService = {
     try {
       console.log("hello");
       const processedData = { ...rowData };
-      const fileFields = ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'ModificationAdvice', 'PurchaseOrder'];
+      const fileFields = ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'ModificationAdvice', 'PurchaseOrder','InspectionCertificate'];
   
       for (const field of fileFields) {
         if (processedData[field] instanceof File) {
