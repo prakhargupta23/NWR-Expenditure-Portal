@@ -56,7 +56,11 @@ const getdata = async (file: File, documentType: keyof typeof documentKeys, rowI
   try {
     const answer = await fetchWrapper.post(`${config.apiUrl}/api/extract-expenditure-data`, data);
     console.log("gpt answer", answer);
-    return answer?"success" : "error";
+    if(documentType === "GSTInvoice"){
+      return answer?{response:"success",IREPSRegNo:answer.regno} : {response:"error"};
+    }else{
+      return answer?{response:"success"} : {response:"error"};
+    }
   } catch (err) {
     console.error("Fetch error:", err);
     throw err;

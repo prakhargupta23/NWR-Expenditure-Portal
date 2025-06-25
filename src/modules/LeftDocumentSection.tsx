@@ -99,10 +99,10 @@ export default function LeftDocumentSection() {
       InspectionCertificate: null,
       Status: "pending" as const,
       VerificationTime: "",
-      AuthorizationCommittee: "",
+      AuthorizationCommittee: "-",
       Remark: "",
     };
-    setRows([...rows, newRow]);
+    setRows([newRow, ...rows]);
   };
 
   const handleFileUpload = async (
@@ -120,18 +120,20 @@ export default function LeftDocumentSection() {
         }));
 
         const base64String = await expenditureService.getdata(file, documentType, rowId);
-        
+        const combinedString = `${documentType}UploadTime`;
+        const uploadTime = new Date();
         // Update UI immediately to show pending state
+        const no=documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-"
+        if(documentType === "GSTInvoice")console.log("irepsno",base64String,no)
+        console.log("uploadTime",uploadTime)
         setRows(
           rows.map((row) =>
             row["SNo"] === rowId
               ? {
                   ...row,
-                  [documentType]: base64String,
-                  verification: "pending" as const,
-                  verificationTime: "",
-                  authorizationCommittee: "",
-                  remark: "Processing document...",
+                  [documentType]: base64String.response,
+                  [combinedString]: uploadTime.toISOString(),
+                  AuthorizationCommittee: documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-",
                 }
               : row
           )
@@ -139,7 +141,9 @@ export default function LeftDocumentSection() {
 
         const updatedRow = {
           ...rows.find(row => row["SNo"] === rowId)!,
-          [documentType]: base64String,
+          [documentType]: base64String.response,
+          [combinedString]: uploadTime.toISOString(),
+          AuthorizationCommittee: documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-",
         };
 
         // Update backend
@@ -227,10 +231,19 @@ export default function LeftDocumentSection() {
         // Check the status from the response object
         status = response.Status === "approved" || response.Status === "Approved" ? "approved" : "rejected";
         console.log("Determined status:", status, response.Status);
+        console.log("Matched results",response.MatchedResults)
+        console.log("Unmatched results",response.UnmatchedResults)
         
         // Format the remarks as bulleted points if Results array exists
-        if (response.Results && Array.isArray(response.Results)) {
-          formattedRemark = response.Results.map((result: string) => `• ${result}`).join('\n');
+        if (response.MatchedResults && Array.isArray(response.MatchedResults)) {
+          formattedRemark = [
+            'Unmatched Results',
+            response.UnmatchedResults.map((result: string) => `• ${result}`).join('\n'),
+            '',
+            'Matched Results',
+            response.MatchedResults.map((result: string) => `• ${result}`).join('\n'),
+          ].join('\n')
+          console.log("formatted remark",formattedRemark)
         } else if (response.Reason) {
           formattedRemark = response.Reason;
         }
@@ -240,7 +253,6 @@ export default function LeftDocumentSection() {
           Status: status,
           Remark: formattedRemark,
           VerificationTime: formatIndianDateTime(new Date()),
-          AuthorizationCommittee: "System"
         };
 
         console.log("Preparing to update database with row:", {
@@ -263,8 +275,8 @@ export default function LeftDocumentSection() {
           setRows(rows.map(r => r.SNo === row.SNo ? updatedRow : r));
           
           // Finally reload data to ensure consistency
-          console.log("Reloading data from database...");
-          await fetchExpenditureData();
+          // console.log("Reloading data from database...");
+          // await fetchExpenditureData();
           
           console.log("Verification and database update completed successfully for row:", row.SNo);
         } catch (dbError) {
@@ -275,7 +287,6 @@ export default function LeftDocumentSection() {
             Status: 'rejected' as const,
             Remark: `Database update failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
             VerificationTime: formatIndianDateTime(new Date()),
-            AuthorizationCommittee: "System"
           };
           
           // Update UI to show database error
@@ -298,7 +309,6 @@ export default function LeftDocumentSection() {
         Status: 'rejected' as const,
         Remark: `Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         VerificationTime: formatIndianDateTime(new Date()),
-        AuthorizationCommittee: "System"
       };
       
       // Update UI with verification error
@@ -437,7 +447,7 @@ export default function LeftDocumentSection() {
                   fontWeight: "bold",
                   flexShrink: 0
                 }}>
-                  Committee
+                  IREPS No.
                 </Box>
                 {/* Document Type Headers (excluding S.No) */}
                 {documentTypes.slice(1).map((type, index) => (
@@ -550,7 +560,7 @@ export default function LeftDocumentSection() {
                   flexShrink: 0,
                   color: "white"
                 }}>
-                  {row.AuthorizationCommittee || "-"}
+                  {row.AuthorizationCommittee}
                 </Box>
 
                 {/* File Upload Columns */}
@@ -559,9 +569,10 @@ export default function LeftDocumentSection() {
                 ).map(([key, file]) => {
                   const isNull = file === null;
                   const isUploading = uploadingFiles[`${row.SNo}-${key}`];
-                  
+                  const uploadTimeKey = `${key}UploadTime`;
+                  const uploadTime = (row as any)[uploadTimeKey] as string | undefined;
                   return (
-                    <Box key={key} sx={{ width: "120px", flexShrink: 0 }}>
+                    <Box key={key} sx={{ width: "120px", flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <input
                         accept="*"
                         style={{ display: "none" }}
@@ -601,6 +612,12 @@ export default function LeftDocumentSection() {
                           </Button>
                         </Tooltip>
                       </label>
+                      {/* Show upload time below the button if available */}
+                      {uploadTime && (
+                        <Typography variant="caption" sx={{ color: '#aaa', mt: 0.5, fontSize: '0.7rem', textAlign: 'center', wordBreak: 'break-all', width: '70px' }}>
+                          {formatIndianDateTime(new Date(uploadTime))}
+                        </Typography>
+                      )}
                     </Box>
                   );
                 })}
