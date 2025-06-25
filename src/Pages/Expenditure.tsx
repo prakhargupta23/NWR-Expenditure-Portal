@@ -33,7 +33,7 @@ export default function Expenditure() {
         sx={{
           width: "95%",
           height: "calc(100% - 78px)", // Subtracts AppBar height from total height
-          marginTop: "20px",
+          marginTop: "0px",
         }}
       >
         <Grid
@@ -52,7 +52,7 @@ export default function Expenditure() {
           <Grid
             item
             xs={12}
-            md={7}
+            md={12}
             sx={{
               display: "flex",
               flexDirection: "column",
@@ -63,7 +63,7 @@ export default function Expenditure() {
           </Grid>
           
           {/* Right Section (AI Chat) */}
-          <Grid
+          {/* <Grid
             item
             xs={12}
             md={5}
@@ -76,7 +76,7 @@ export default function Expenditure() {
             }}
           >
             <AiChat pageName="pension" />
-          </Grid>
+          </Grid> */}
         </Grid>
       </Box>
     </div>

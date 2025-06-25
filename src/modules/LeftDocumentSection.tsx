@@ -25,7 +25,7 @@ interface DocumentRow {
   TaxInvoice: string | null;
   GSTInvoice: string | null;
   ModificationAdvice: string | null;
-  // InspectionCertificate: string | null;
+  InspectionCertificate: string | null;
   PurchaseOrder: string | null;
   Status: "pending" | "approved" | "rejected";
   VerificationTime: string;
@@ -38,11 +38,13 @@ const documentTypes = [
   "Receipt Note",
   "Tax Invoice",
   "GST Invoice",
-  "Modification advice",
-  "Purchase Order"
+  "Modification Advice",
+  "Purchase Order",
+  "Inspection Certificate",
+  
 ];
 
-type DocumentType = 'ReceiptNote' | 'TaxInvoice' | 'GSTInvoice' | 'ModificationAdvice' | 'PurchaseOrder';
+type DocumentType = 'ReceiptNote' | 'TaxInvoice' | 'GSTInvoice' | 'ModificationAdvice' | 'PurchaseOrder' | 'InspectionCertificate';
 
 export default function LeftDocumentSection() {
   const [rows, setRows] = useState<DocumentRow[]>([]);
@@ -65,20 +67,19 @@ export default function LeftDocumentSection() {
       // Process the data to ensure all document fields are properly handled
       const processedData = data.map((row: any) => ({
         ...row,
-        // Ensure all document fields are either base64 strings or null
         SNo: row.SNo,
         AuthorizationCommittee: row.AuthorizationCommittee,
         VerificationTime: row.VerificationTime,
         Status:row.Status,
         Remark: row.Remark,
         ReceiptNote: row.ReceiptNote,
-        // InspectionCertificate: row.InspectionCertificate,
         TaxInvoice: row.TaxInvoice,
         GSTInvoice: row.GSTInvoice,
         ModificationAdvice: row.ModificationAdvice,
         PurchaseOrder: row.PurchaseOrder,
+        InspectionCertificate: row.InspectionCertificate,
       }));
-      console.log("",processedData)
+      console.log("Fetched data",processedData)
       setRows(processedData);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -94,43 +95,15 @@ export default function LeftDocumentSection() {
       TaxInvoice: null,
       GSTInvoice: null,
       ModificationAdvice: null,
-      // InspectionCertificate: null,
       PurchaseOrder: null,
+      InspectionCertificate: null,
       Status: "pending" as const,
       VerificationTime: "",
-      AuthorizationCommittee: "",
+      AuthorizationCommittee: "-",
       Remark: "",
     };
-    setRows([...rows, newRow]);
+    setRows([newRow, ...rows]);
   };
-
-  // Function to save a row to the backend (insert or update)
-  // const saveRowToBackend = async (row: DocumentRow) => {
-  //   try {
-  //     // Assuming updateExpenditureData handles both insert (no id) and update (with id)
-  //     const result = await expenditureService.updateExpenditureData(row);
-  //     console.log("Save row result:", result);
-  //     // If it was an insert, the result might contain the new ID from the database
-  //     const resultData = result as any; // Cast to any to bypass linter error
-  //     if (typeof resultData === 'object' && resultData !== null && resultData.success && resultData["SNo"] && !row["SNo"]) {
-  //       // Update the local state with the new ID if it was an insert
-  //       setRows(prevRows => prevRows.map(prevRow => 
-  //         // Find the temporary row by matching other properties if ID is not available yet, 
-  //         // or if a temporary ID was used, match and replace with the returned ID
-  //         // A more robust approach might involve a temporary ID or matching by unique properties
-  //         // For simplicity here, we'll rely on the backend returning the full updated row or new row with ID
-  //         prevRow["SNo"] === row["SNo"] ? { ...prevRow, id: resultData["SNo"] } : prevRow
-  //       ));
-  //     } else if (typeof resultData === 'object' && resultData !== null && resultData.success && row["SNo"]) {
-  //       // Update successful for existing row, no need to update ID
-  //       console.log(`Row with ID ${row["SNo"]} updated successfully.`);
-  //     }
-  //     return result;
-  //   } catch (error) {
-  //     console.error("Error saving row to backend:", error);
-  //     throw error;
-  //   }
-  // };
 
   const handleFileUpload = async (
     rowId: number,
@@ -147,18 +120,20 @@ export default function LeftDocumentSection() {
         }));
 
         const base64String = await expenditureService.getdata(file, documentType, rowId);
-        
+        const combinedString = `${documentType}UploadTime`;
+        const uploadTime = new Date();
         // Update UI immediately to show pending state
+        const no=documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-"
+        if(documentType === "GSTInvoice")console.log("irepsno",base64String,no)
+        console.log("uploadTime",uploadTime)
         setRows(
           rows.map((row) =>
             row["SNo"] === rowId
               ? {
                   ...row,
-                  [documentType]: base64String,
-                  verification: "pending" as const,
-                  verificationTime: "",
-                  authorizationCommittee: "",
-                  remark: "Processing document...",
+                  [documentType]: base64String.response,
+                  [combinedString]: uploadTime.toISOString(),
+                  AuthorizationCommittee: documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-",
                 }
               : row
           )
@@ -166,7 +141,9 @@ export default function LeftDocumentSection() {
 
         const updatedRow = {
           ...rows.find(row => row["SNo"] === rowId)!,
-          [documentType]: base64String,
+          [documentType]: base64String.response,
+          [combinedString]: uploadTime.toISOString(),
+          AuthorizationCommittee: documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-",
         };
 
         // Update backend
@@ -242,32 +219,40 @@ export default function LeftDocumentSection() {
         [row.SNo]: true
       }));
 
-      console.log("Starting verification for row:", row.SNo);
+      console.log("Starting verification for row:", row);
       const response = await expenditureService.reportVerification(row);
       console.log("Verification response:", response);
       
       // Ensure we're handling the response properly
       let status: "approved" | "rejected" = "rejected";
-      let reason = '';
+      let formattedRemark = '';
 
       if (response) {
         // Check the status from the response object
-        status = response.Status == "approved" || response.Status == "Approved" ? "approved" : "rejected";
-        console.log("Determined status:", status,response.Status);
+        status = response.Status === "approved" || response.Status === "Approved" ? "approved" : "rejected";
+        console.log("Determined status:", status, response.Status);
+        console.log("Matched results",response.MatchedResults)
+        console.log("Unmatched results",response.UnmatchedResults)
         
-        // Get the reason from the response object
-        console.log("Response reason:", response.Reason);
-        if (response.Reason) {
-          reason = response.Reason;
-          console.log("Verification reason:", reason);
+        // Format the remarks as bulleted points if Results array exists
+        if (response.MatchedResults && Array.isArray(response.MatchedResults)) {
+          formattedRemark = [
+            'Unmatched Results',
+            response.UnmatchedResults.map((result: string) => `• ${result}`).join('\n'),
+            '',
+            'Matched Results',
+            response.MatchedResults.map((result: string) => `• ${result}`).join('\n'),
+          ].join('\n')
+          console.log("formatted remark",formattedRemark)
+        } else if (response.Reason) {
+          formattedRemark = response.Reason;
         }
 
         const updatedRow: DocumentRow = {
           ...row,
           Status: status,
-          Remark: reason,
+          Remark: formattedRemark,
           VerificationTime: formatIndianDateTime(new Date()),
-          AuthorizationCommittee: "System"
         };
 
         console.log("Preparing to update database with row:", {
@@ -290,8 +275,8 @@ export default function LeftDocumentSection() {
           setRows(rows.map(r => r.SNo === row.SNo ? updatedRow : r));
           
           // Finally reload data to ensure consistency
-          console.log("Reloading data from database...");
-          await fetchExpenditureData();
+          // console.log("Reloading data from database...");
+          // await fetchExpenditureData();
           
           console.log("Verification and database update completed successfully for row:", row.SNo);
         } catch (dbError) {
@@ -302,7 +287,6 @@ export default function LeftDocumentSection() {
             Status: 'rejected' as const,
             Remark: `Database update failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
             VerificationTime: formatIndianDateTime(new Date()),
-            AuthorizationCommittee: "System"
           };
           
           // Update UI to show database error
@@ -325,7 +309,6 @@ export default function LeftDocumentSection() {
         Status: 'rejected' as const,
         Remark: `Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         VerificationTime: formatIndianDateTime(new Date()),
-        AuthorizationCommittee: "System"
       };
       
       // Update UI with verification error
@@ -456,16 +439,6 @@ export default function LeftDocumentSection() {
                 }}>
                   Status
                 </Box>
-                {/* Verified At Header */}
-                <Box sx={{
-                  width: "150px",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  Verified At
-                </Box>
                 {/* Committee Header */}
                 <Box sx={{
                   width: "150px",
@@ -474,7 +447,7 @@ export default function LeftDocumentSection() {
                   fontWeight: "bold",
                   flexShrink: 0
                 }}>
-                  Committee
+                  IREPS No.
                 </Box>
                 {/* Document Type Headers (excluding S.No) */}
                 {documentTypes.slice(1).map((type, index) => (
@@ -488,7 +461,27 @@ export default function LeftDocumentSection() {
                      {type}
                    </Box>
                  ))}
-                 {/* Remarks Header */}
+                {/* Action Header */}
+                <Box sx={{
+                  width: "90px",
+                  textAlign: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  flexShrink: 0
+                }}>
+                  Action
+                </Box>
+                {/* Verified At Header */}
+                <Box sx={{
+                  width: "150px",
+                  textAlign: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  flexShrink: 0
+                }}>
+                  Verified At
+                </Box>
+                {/* Remarks Header */}
                 <Box sx={{
                   width: "350px",
                   textAlign: "center",
@@ -558,18 +551,6 @@ export default function LeftDocumentSection() {
                   </Tooltip>
                 </Box>
 
-                {/* Verification Time Column */}
-                <Box sx={{ 
-                  width: "150px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  color: "white"
-                }}>
-                  {row.VerificationTime || "-"}
-                </Box>
-
                 {/* Authorization Committee Column */}
                 <Box sx={{ 
                   width: "150px",
@@ -579,18 +560,19 @@ export default function LeftDocumentSection() {
                   flexShrink: 0,
                   color: "white"
                 }}>
-                  {row.AuthorizationCommittee || "-"}
+                  {row.AuthorizationCommittee}
                 </Box>
 
                 {/* File Upload Columns */}
                 {Object.entries(row).filter(([key]) => 
-                  ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'PurchaseOrder', 'ModificationAdvice'].includes(key)
+                  ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'ModificationAdvice', 'PurchaseOrder', 'InspectionCertificate'].includes(key)
                 ).map(([key, file]) => {
                   const isNull = file === null;
                   const isUploading = uploadingFiles[`${row.SNo}-${key}`];
-                  
+                  const uploadTimeKey = `${key}UploadTime`;
+                  const uploadTime = (row as any)[uploadTimeKey] as string | undefined;
                   return (
-                    <Box key={key} sx={{ width: "120px", flexShrink: 0 }}>
+                    <Box key={key} sx={{ width: "120px", flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <input
                         accept="*"
                         style={{ display: "none" }}
@@ -630,22 +612,57 @@ export default function LeftDocumentSection() {
                           </Button>
                         </Tooltip>
                       </label>
+                      {/* Show upload time below the button if available */}
+                      {uploadTime && (
+                        <Typography variant="caption" sx={{ color: '#aaa', mt: 0.5, fontSize: '0.7rem', textAlign: 'center', wordBreak: 'break-all', width: '70px' }}>
+                          {formatIndianDateTime(new Date(uploadTime))}
+                        </Typography>
+                      )}
                     </Box>
                   );
                 })}
+
+                {/* Verify Button */}
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    minWidth: "90px"
+                  }}
+                  onClick={() => handleVerify(row)}
+                  disabled={row.Status !== "pending" || verifyingRows[row.SNo]}
+                >
+                  {verifyingRows[row.SNo] ? "Verifying..." : "Verify"}
+                </Button>
+
+                {/* Verification Time Column */}
+                <Box sx={{ 
+                  width: "150px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  color: "white"
+                }}>
+                  {row.VerificationTime || "-"}
+                </Box>
 
                 {/* System Remark Column */}
                 <Box sx={{ 
                   width: "350px",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
                   flexShrink: 0,
                   color: "white",
                   fontStyle: row.Remark ? "normal" : "italic",
-                  fontSize: "0.6rem",
+                  fontSize: "0.8rem",
                   paddingTop: "5px",
-                  maxHeight: "80px",
+                  maxHeight: "120px",
                   overflow: "auto",
                   "&::-webkit-scrollbar": {
                     width: "6px",
@@ -662,26 +679,11 @@ export default function LeftDocumentSection() {
                   wordBreak: "break-word",
                   backgroundColor: "rgba(0, 0, 0, 0.2)",
                   borderRadius: "4px",
-                  margin: "0 8px"
+                  margin: "0 8px",
+                  whiteSpace: "pre-line"
                 }}>
                   {row.Remark || "Pending review"}
                 </Box>
-                <Box sx={{ width: 24 }} /> {/* Space after remark */}
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
-                  sx={{
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    minWidth: "90px"
-                  }}
-                  onClick={() => handleVerify(row)}
-                  disabled={row.Status !== "pending" || verifyingRows[row.SNo]}
-                >
-                  {verifyingRows[row.SNo] ? "Verifying..." : "Verify"}
-                </Button>
               </Box>
             ))}
           </Box>

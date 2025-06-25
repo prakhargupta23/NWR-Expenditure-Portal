@@ -18,11 +18,13 @@ export const userService = {
 
 //// Funciton for creating new experiments ---------------------------/
 async function login(username: string, password: string) {
+  const portal = undefined
   let response = await fetchWrapper.post(`${config.apiUrl}/api/login`, {
     username,
     password,
+    portal,
   });
-
+  console.log("login",response)
   localStorage.setItem("user", JSON.stringify({ jwt: response.data.jwt }));
   let user = {
     jwt: response.data.jwt,

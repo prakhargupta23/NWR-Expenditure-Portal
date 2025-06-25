@@ -95,24 +95,6 @@ export default function ExpenditureBar({
                     ><MenuIcon/></IconButton>
                 ):(
                     <Box sx={{display:"flex",alignItems: "center"}}>
-                        {/* Commenting out extra buttons
-                        {extraButton === false ? (
-                            <>
-                            {deleteLoading ? (
-                                <IconButton sx={{color:"white"}}>
-                                    <CircularProgress size={24} />
-                                </IconButton>
-                            ):(
-                                <IconButton
-                                onClick={() => setdeleteModalOpen(true)}
-                                sx={{color:"white"}}>
-                                    <DeleteIcon />
-                                </IconButton>
-                            )}
-                            <PDFUploadButton />
-                            </>
-                        ):null}
-                        */}
                         <img
                             src={require("../assets/logo.png")}
                             alt="railway"

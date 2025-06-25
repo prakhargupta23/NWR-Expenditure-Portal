@@ -8,6 +8,7 @@
     "path": false
   },
   "dependencies": {
+    "@adobe/pdfservices-node-sdk": "^4.1.0",
     "@azure/msal-browser": "^3.18.0",
     "@azure/msal-react": "^2.0.19",
     "@azure/openai": "^1.0.0-beta.12",
@@ -15,6 +16,7 @@
     "@azure/storage-queue": "^12.16.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
+    "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
     "@mui/icons-material": "^5.14.18",
     "@mui/lab": "^5.0.0-alpha.170",
     "@mui/material": "^5.15.17",
@@ -58,6 +60,7 @@
     "install": "^0.13.0",
     "js-cookie": "^3.0.5",
     "lodash": "^4.17.21",
+    "mammoth": "^1.9.1",
     "marked": "^15.0.6",
     "mixpanel-browser": "^2.47.0",
     "moment": "^2.30.1",
@@ -119,6 +122,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@types/file-saver": "^2.0.7",
     "@types/html-docx-js": "^0.3.4",
     "@types/html-to-docx": "^1.8.0",
