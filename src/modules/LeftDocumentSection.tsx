@@ -9,7 +9,8 @@ import {
   Avatar,
   Badge,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  InputAdornment
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -17,6 +18,8 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import CancelIcon from "@mui/icons-material/Cancel";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
 import { expenditureService } from "../services/expenditure.service";
 
 interface DocumentRow {
@@ -51,11 +54,26 @@ export default function LeftDocumentSection() {
   const [loading, setLoading] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{[key: string]: boolean}>({});
   const [verifyingRows, setVerifyingRows] = useState<{[key: number]: boolean}>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredRows, setFilteredRows] = useState<DocumentRow[]>([]);
 
   // Fetch data on component mount
   useEffect(() => {
     fetchExpenditureData();
   }, []);
+
+  // Filter rows when search query or rows change
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredRows(rows);
+    } else {
+      const filtered = rows.filter(row => 
+        row.AuthorizationCommittee && 
+        row.AuthorizationCommittee.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredRows(filtered);
+    }
+  }, [searchQuery, rows]);
 
   const fetchExpenditureData = async () => {
     try {
@@ -150,7 +168,7 @@ export default function LeftDocumentSection() {
         await expenditureService.updateExpenditureData(updatedRow);
         
         // Reload data from backend to ensure consistency
-        await fetchExpenditureData();
+        // await fetchExpenditureData();
 
       } catch (error) {
         console.error('Error processing document:', error);
@@ -330,6 +348,15 @@ export default function LeftDocumentSection() {
     }
   };
 
+  const handleSearch = () => {
+    // Search is handled by the useEffect above
+    // This function can be used for additional search logic if needed
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -347,10 +374,73 @@ export default function LeftDocumentSection() {
         flexDirection: "column",
       }}
     >
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, mt: 4 }}>
-        <Typography variant="h6" sx={{ color: "white", fontWeight: 600 }}>
-          Documents
-        </Typography>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, mt: 2, alignItems: "center" }}>
+        {/* Search Bar */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, maxWidth: "400px" }}>
+          <TextField
+            placeholder="Search by IREPS number..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch();
+              }
+            }}
+            size="small"
+            sx={{
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                color: 'white',
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                borderRadius: '8px',
+                '& fieldset': {
+                  borderColor: '#7B2FF7',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#7B2FF7',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#7B2FF7',
+                },
+                '& input::placeholder': {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  opacity: 1,
+                },
+              },
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  {searchQuery && (
+                    <IconButton
+                      onClick={handleClearSearch}
+                      sx={{ color: 'rgba(255, 255, 255, 0.6)' }}
+                      size="small"
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  )}
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={handleSearch}
+            sx={{
+              background: "linear-gradient(90deg, #7B2FF7, #9F44D3)",
+              color: "white",
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: 600,
+              minWidth: "auto",
+              px: 2,
+            }}
+          >
+            <SearchIcon />
+          </Button>
+        </Box>
+        
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -387,7 +477,7 @@ export default function LeftDocumentSection() {
           },
         }}
       >
-        {rows.length === 0 ? (
+        {filteredRows.length === 0 ? (
           <Box
             sx={{
               display: "flex",
@@ -397,7 +487,9 @@ export default function LeftDocumentSection() {
               color: "rgba(255, 255, 255, 0.5)",
             }}
           >
-            <Typography variant="h6">No documents added yet</Typography>
+            <Typography variant="h6">
+              {searchQuery ? `No documents found for IREPS number: ${searchQuery}` : "No documents added yet"}
+            </Typography>
           </Box>
         ) : (
           <Box sx={{ p: 2, width: "max-content", minWidth: "100%" }}>
@@ -495,7 +587,7 @@ export default function LeftDocumentSection() {
             </Box>
 
             {/* Data Rows */}
-            {rows.map((row, rowIndex) => (
+            {filteredRows.map((row, rowIndex) => (
               <Box 
                 key={row["SNo"]}
                 sx={{
