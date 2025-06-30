@@ -21,6 +21,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import { expenditureService } from "../services/expenditure.service";
+import Expanded from "./expanded";
 
 interface DocumentRow {
   SNo: number;
@@ -56,6 +57,7 @@ export default function LeftDocumentSection() {
   const [verifyingRows, setVerifyingRows] = useState<{[key: number]: boolean}>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredRows, setFilteredRows] = useState<DocumentRow[]>([]);
+  const [expandedRow, setExpandedRow] = useState<DocumentRow | null>(null);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -503,7 +505,9 @@ export default function LeftDocumentSection() {
           },
         }}
       >
-        {filteredRows.length === 0 ? (
+        {expandedRow ? (
+          <Expanded row={expandedRow} onClose={() => setExpandedRow(null)} />
+        ) : filteredRows.length === 0 ? (
           <Box
             sx={{
               display: "flex",
@@ -625,8 +629,10 @@ export default function LeftDocumentSection() {
                   p: 2,
                   position: "relative",
                   width: "max-content",
-                  minWidth: "100%"
+                  minWidth: "100%",
+                  cursor: "pointer"
                 }}
+                onClick={() => setExpandedRow(row)}
               >
                 {/* S.No Column */}
                 <Box sx={{ 

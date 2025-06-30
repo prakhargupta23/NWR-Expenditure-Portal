@@ -586,7 +586,7 @@ export default function DocumentUpload() {
                         onClick={() => handleVerify(row)}
                         disabled={row.Status !== 'pending' || verifyingRows[row.SNo]}
                       >
-                        {verifyingRows[row.SNo] ? "Verifying..." : "Verify All Documents"}
+                        {verifyingRows[row.SNo] ? "Verifying..." : "Verify by AI"}
                       </Button>
                     </Box>
                   </Box>
