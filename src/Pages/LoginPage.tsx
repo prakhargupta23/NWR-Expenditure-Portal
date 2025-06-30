@@ -73,7 +73,7 @@ function LoginPage() {
                 localStorage.setItem("role", role);
                 setSnackbarOpen(true);
                 setSnackbarMessage("Login successfully");
-                navigate("/dashboard");
+                navigate("/Expenditure");
               } else {
                 setSnackbarOpen(true);
                 setSnackbarMessage(`Login unsuccessfull ${response.message}`);

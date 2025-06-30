@@ -144,18 +144,18 @@ export default function LeftDocumentSection() {
         const no=documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-"
         if(documentType === "GSTInvoice")console.log("irepsno",base64String,no)
         console.log("uploadTime",uploadTime)
-        setRows(
-          rows.map((row) =>
-            row["SNo"] === rowId
-              ? {
-                  ...row,
-                  [documentType]: base64String.response,
-                  [combinedString]: uploadTime.toISOString(),
-                  AuthorizationCommittee: documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-",
-                }
-              : row
-          )
-        );
+        // setRows(
+        //   rows.map((row) =>
+        //     row["SNo"] === rowId
+        //       ? {
+        //           ...row,
+        //           [documentType]: base64String.response,
+        //           [combinedString]: uploadTime.toISOString(),
+        //           AuthorizationCommittee: documentType === "GSTInvoice" ? base64String.IREPSRegNo : "-",
+        //         }
+        //       : row
+        //   )
+        // );
 
         const updatedRow = {
           ...rows.find(row => row["SNo"] === rowId)!,
@@ -167,8 +167,34 @@ export default function LeftDocumentSection() {
         // Update backend
         await expenditureService.updateExpenditureData(updatedRow);
         
+
+
+
+
+
         // Reload data from backend to ensure consistency
         // await fetchExpenditureData();
+        const datafetched = await expenditureService.getExpenditureData();
+        const data = datafetched.data;
+        console.log("start:",data);
+
+        // Process the data to ensure all document fields are properly handled
+        const processedData = data.map((row: any) => ({
+          ...row,
+          SNo: row.SNo,
+          AuthorizationCommittee: row.AuthorizationCommittee,
+          VerificationTime: row.VerificationTime,
+          Status:row.Status,
+          Remark: row.Remark,
+          ReceiptNote: row.ReceiptNote,
+          TaxInvoice: row.TaxInvoice,
+          GSTInvoice: row.GSTInvoice,
+          ModificationAdvice: row.ModificationAdvice,
+          PurchaseOrder: row.PurchaseOrder,
+          InspectionCertificate: row.InspectionCertificate,
+        }));
+        console.log("Fetched data",processedData)
+        setRows(processedData);
 
       } catch (error) {
         console.error('Error processing document:', error);
@@ -441,7 +467,7 @@ export default function LeftDocumentSection() {
           </Button>
         </Box>
         
-        <Button
+        {/* <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={addNewRow}
@@ -454,7 +480,7 @@ export default function LeftDocumentSection() {
           }}
         >
           Add New
-        </Button>
+        </Button> */}
       </Box>
 
       <Paper

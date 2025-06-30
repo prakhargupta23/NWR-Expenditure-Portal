@@ -19,7 +19,7 @@ export const routes = createBrowserRouter([
   },
   {
     path: "/*",
-    element: <LoginPage />,
+    element: <Expenditure />,
   },
   // {
   //   path: "/pfa",
