@@ -490,7 +490,7 @@ export default function LeftDocumentSection() {
         sx={{
           flex: 1,
           borderRadius: "12px",
-          backgroundColor: "#161921",
+          backgroundColor: "rgba(54, 249, 220, 0.005)",
           border: "1px solid rgba(251, 249, 252, 0.2)",
           overflow: "auto",
           "&::-webkit-scrollbar": {
@@ -522,7 +522,7 @@ export default function LeftDocumentSection() {
             </Typography>
           </Box>
         ) : (
-          <Box sx={{ p: 2, width: "max-content", minWidth: "100%" }}>
+          <Box sx={{ p: 2, width: "100vw", maxWidth: "95%" }}>
             <Box sx={{ 
               display: "flex", 
               gap: 1,
@@ -543,7 +543,8 @@ export default function LeftDocumentSection() {
               }}>
                 {/* S.No Header */}
                 <Box sx={{
-                  width: "120px",
+                  // width: "120px",
+                  width: "22%",
                   textAlign: "center",
                   color: "white",
                   fontWeight: "bold",
@@ -553,7 +554,8 @@ export default function LeftDocumentSection() {
                 </Box>
                 {/* Status Header */}
                 <Box sx={{
-                  width: "100px",
+                  // width: "100px",
+                  width: "25%",
                   textAlign: "center",
                   color: "white",
                   fontWeight: "bold",
@@ -563,7 +565,8 @@ export default function LeftDocumentSection() {
                 </Box>
                 {/* Committee Header */}
                 <Box sx={{
-                  width: "150px",
+                  // width: "150px",
+                  width: "25%",
                   textAlign: "center",
                   color: "white",
                   fontWeight: "bold",
@@ -572,7 +575,7 @@ export default function LeftDocumentSection() {
                   IREPS No.
                 </Box>
                 {/* Document Type Headers (excluding S.No) */}
-                {documentTypes.slice(1).map((type, index) => (
+                {/* {documentTypes.slice(1).map((type, index) => (
                    <Box key={index} sx={{ 
                      width: "120px",
                      textAlign: "center",
@@ -582,9 +585,9 @@ export default function LeftDocumentSection() {
                    }}>
                      {type}
                    </Box>
-                 ))}
+                 ))} */}
                 {/* Action Header */}
-                <Box sx={{
+                {/* <Box sx={{
                   width: "90px",
                   textAlign: "center",
                   color: "white",
@@ -592,10 +595,11 @@ export default function LeftDocumentSection() {
                   flexShrink: 0
                 }}>
                   Action
-                </Box>
+                </Box> */}
                 {/* Verified At Header */}
                 <Box sx={{
-                  width: "150px",
+                  // width: "150px",
+                  width: "23%",
                   textAlign: "center",
                   color: "white",
                   fontWeight: "bold",
@@ -604,7 +608,7 @@ export default function LeftDocumentSection() {
                   Verified At
                 </Box>
                 {/* Remarks Header */}
-                <Box sx={{
+                {/* <Box sx={{
                   width: "350px",
                   textAlign: "center",
                   color: "white",
@@ -612,7 +616,7 @@ export default function LeftDocumentSection() {
                   flexShrink: 0
                 }}>
                   Remark
-                </Box>
+                </Box> */}
               </Box>
             </Box>
 
@@ -624,7 +628,7 @@ export default function LeftDocumentSection() {
                   display: "flex",
                   gap: 1,
                   mb: 2,
-                  backgroundColor: "#1E2130",
+                  backgroundColor: "rgba(54, 249, 220, 0.05)",
                   borderRadius: "8px",
                   p: 2,
                   position: "relative",
@@ -636,7 +640,8 @@ export default function LeftDocumentSection() {
               >
                 {/* S.No Column */}
                 <Box sx={{ 
-                  width: "120px",
+                  // width: "120px",
+                  width: "20%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -648,7 +653,8 @@ export default function LeftDocumentSection() {
 
                 {/* Verification Status Column */}
                 <Box sx={{ 
-                  width: "100px",
+                  // width: "100px",
+                  width: "25%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -677,7 +683,8 @@ export default function LeftDocumentSection() {
 
                 {/* Authorization Committee Column */}
                 <Box sx={{ 
-                  width: "150px",
+                  // width: "150px",
+                  width: "25%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -688,7 +695,7 @@ export default function LeftDocumentSection() {
                 </Box>
 
                 {/* File Upload Columns */}
-                {Object.entries(row).filter(([key]) => 
+                {/* {Object.entries(row).filter(([key]) => 
                   ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'ModificationAdvice', 'PurchaseOrder', 'InspectionCertificate'].includes(key)
                 ).map(([key, file]) => {
                   const isNull = file === null;
@@ -736,7 +743,6 @@ export default function LeftDocumentSection() {
                           </Button>
                         </Tooltip>
                       </label>
-                      {/* Show upload time below the button if available */}
                       {uploadTime && (
                         <Typography variant="caption" sx={{ color: '#aaa', mt: 0.5, fontSize: '0.7rem', textAlign: 'center', wordBreak: 'break-all', width: '70px' }}>
                           {formatIndianDateTime(new Date(uploadTime))}
@@ -744,10 +750,10 @@ export default function LeftDocumentSection() {
                       )}
                     </Box>
                   );
-                })}
+                })} */}
 
                 {/* Verify Button */}
-                <Button
+                {/* <Button
                   variant="contained"
                   color="success"
                   startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
@@ -761,11 +767,12 @@ export default function LeftDocumentSection() {
                   disabled={row.Status !== "pending" || verifyingRows[row.SNo]}
                 >
                   {verifyingRows[row.SNo] ? "Verifying..." : "Verify"}
-                </Button>
+                </Button> */}
 
                 {/* Verification Time Column */}
                 <Box sx={{ 
-                  width: "150px",
+                  // width: "150px",
+                  width: "25%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -776,7 +783,7 @@ export default function LeftDocumentSection() {
                 </Box>
 
                 {/* System Remark Column */}
-                <Box sx={{ 
+                {/* <Box sx={{ 
                   width: "350px",
                   display: "flex",
                   alignItems: "flex-start",
@@ -807,7 +814,7 @@ export default function LeftDocumentSection() {
                   whiteSpace: "pre-line"
                 }}>
                   {row.Remark || "Pending review"}
-                </Box>
+                </Box> */}
               </Box>
             ))}
           </Box>

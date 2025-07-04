@@ -29,6 +29,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import { expenditureService } from "../services/expenditure.service";
+import aiIcon from "../assets/artificial-intelligence.png";
 
 interface DocumentRow {
   SNo: number;
@@ -366,7 +367,7 @@ export default function DocumentUpload() {
     <Box
       sx={{
         height: "100%",
-        backgroundColor: "#0A0D14",
+        
         color: "white",
         p: 3,
         display: "flex",
@@ -383,7 +384,7 @@ export default function DocumentUpload() {
             startIcon={<AddIcon />}
             onClick={addNewRow}
             sx={{
-              background: "linear-gradient(90deg, #7B2FF7, #9F44D3)",
+              background: 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))',
               color: "white",
               borderRadius: "6px",
               textTransform: "none",
@@ -424,13 +425,14 @@ export default function DocumentUpload() {
               <Card
                 key={row.SNo}
                 sx={{
-                  backgroundColor: "#1E2130",
-                  border: "1px solid rgba(251, 249, 252, 0.2)",
+                  backgroundColor: "rgba(54, 249, 220, 0.05)",
+                  border: "1px solid rgb(255, 255, 255)",
                   borderRadius: "12px",
                   height: "100%",
+                  boxShadow: "0 8px 25px rgba(123, 247, 247, 0.3)",
                   transition: "transform 0.2s ease-in-out",
                   "&:hover": {
-                    transform: "translateY(-2px)",
+                    // transform: "translateY(-2px)",
                     boxShadow: "0 8px 25px rgba(123, 47, 247, 0.3)",
                   },
                 }}
@@ -573,9 +575,13 @@ export default function DocumentUpload() {
                         variant="contained"
                         color="success"
                         size="large"
-                        startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
+                        startIcon={
+                          verifyingRows[row.SNo]
+                            ? <CircularProgress size={20} color="inherit" />
+                            : <img src={aiIcon} alt="AI" style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                        }
                         sx={{
-                          borderRadius: "8px",
+                          borderRadius: "70px",
                           textTransform: "none",
                           fontWeight: 600,
                           fontSize: "1rem",
@@ -594,8 +600,7 @@ export default function DocumentUpload() {
                   <Divider sx={{ mb: 3, borderColor: "rgba(255, 255, 255, 0.1)" }} />
 
                   {/* Bottom Section - Remarks */}
-                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
-                    {/* Remarks - Full Width */}
+                  {/* <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
                     <Box sx={{ flex: 1, width: "100%", mr: 3 }}>
                       <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 0.5, fontSize: "1.5rem", textAlign: "center" }}>
                         Remarks
@@ -621,7 +626,7 @@ export default function DocumentUpload() {
                         {row.Remark || "No remarks"}
                       </Typography>
                     </Box>
-                  </Box>
+                  </Box> */}
                 </CardContent>
               </Card>
             ))}

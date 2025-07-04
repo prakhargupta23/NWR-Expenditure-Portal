@@ -5,6 +5,7 @@ import LeftDocumentSection from "../modules/LeftDocumentSection";
 import DocumentUpload from "../modules/Documentupload";
 import AiChat from "../modules/AiChat";
 import Review from "../modules/Review"
+import ParticlesBackground from "../modules/ParticleBackground";
 
 export default function Expenditure() {
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -21,9 +22,22 @@ export default function Expenditure() {
         flexDirection: "column",
         backgroundColor: "#101319",
         alignItems: "center",
-        overflow: "auto"
+        overflow: "hidden"
       }}
     >
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 0,
+          pointerEvents: "none", // so background doesn't block clicks
+        }}
+      >
+        <ParticlesBackground />
+      </div>
       <ExpenditureBar 
         extraButton={false}
         deleteLoading={deleteLoading}
@@ -43,7 +57,7 @@ export default function Expenditure() {
           <Button
             onClick={() => setSelectedTab('dashboard')}
             sx={{
-              background: selectedTab === 'dashboard' ? 'linear-gradient(90deg, #7B2FF7, #9F44D3)' : '#23263a',
+              background: selectedTab === 'dashboard' ? 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))' : '#23263a',
               color: 'white',
               fontWeight: 600,
               borderRadius: '8px 0 0 8px',
@@ -51,7 +65,7 @@ export default function Expenditure() {
               textTransform: 'none',
               borderRight: '1px solid #444',
               '&:hover': {
-                background: 'linear-gradient(90deg, #7B2FF7, #9F44D3)',
+                background: 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))',
               },
             }}
           >
@@ -60,7 +74,7 @@ export default function Expenditure() {
           <Button
             onClick={() => setSelectedTab('document')}
             sx={{
-              background: selectedTab === 'document' ? 'linear-gradient(90deg, #7B2FF7, #9F44D3)' : '#23263a',
+              background: selectedTab === 'document' ? 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))' : '#23263a',
               color: 'white',
               fontWeight: 600,
               borderRadius: 0,
@@ -68,7 +82,7 @@ export default function Expenditure() {
               textTransform: 'none',
               borderRight: '1px solid #444',
               '&:hover': {
-                background: 'linear-gradient(90deg, #7B2FF7, #9F44D3)',
+                background: 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))',
               },
             }}
           >
@@ -77,14 +91,14 @@ export default function Expenditure() {
           <Button
             onClick={() => setSelectedTab('review')}
             sx={{
-              background: selectedTab === 'review' ? 'linear-gradient(90deg, #7B2FF7, #9F44D3)' : '#23263a',
+              background: selectedTab === 'review' ? 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))' : '#23263a',
               color: 'white',
               fontWeight: 600,
               borderRadius: '0 8px 8px 0',
               boxShadow: 'none',
               textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(90deg, #7B2FF7, #9F44D3)',
+                background: 'linear-gradient(90deg, rgba(54, 249, 220, 0.05), rgba(54, 249, 220, 0.5))',
               },
             }}
           >

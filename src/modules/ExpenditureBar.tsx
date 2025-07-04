@@ -37,18 +37,21 @@ export default function ExpenditureBar({
 
     return(
         <>
-        <AppBar position="static"
-        sx={{
-            backgroundColor:"#101319",
-            height: "88px",
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.1)"
-        }}
-        >
+        <AppBar
+            position="static"
+            sx={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)", // semi-transparent white
+                backdropFilter: "blur(10px)", // blur effect
+                WebkitBackdropFilter: "blur(10px)", // Safari support
+                height: "88px",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            }}
+            >
             <Toolbar
             sx={{
                 display: "flex",
