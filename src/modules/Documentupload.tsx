@@ -30,8 +30,15 @@ import ErrorIcon from "@mui/icons-material/Error";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import { expenditureService } from "../services/expenditure.service";
 import aiIcon from "../assets/artificial-intelligence.png";
+import ReviewCheck from './ReviewCheck';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import bg1 from '../assets/bg1.jpg';
+import train from '../assets/Train.png';
+import cloud from '../assets/cloud.png';
+import Expanded from './expanded';
+import { SportsRugbySharp } from "@mui/icons-material";
 
-interface DocumentRow {
+export interface DocumentRow {
   SNo: number;
   ReceiptNote: string | null;
   TaxInvoice: string | null;
@@ -56,13 +63,25 @@ const documentTypes = [
 
 type DocumentType = 'ReceiptNote' | 'TaxInvoice' | 'GSTInvoice' | 'ModificationAdvice' | 'PurchaseOrder' | 'InspectionCertificate';
 
-export default function DocumentUpload() {
+type Tab = "dashboard" | "document" | "review";
+
+interface DocumentUploadProps {
+  onTabChange: (tab: Tab) => void;
+}
+// interface DocumentUploadProps {
+//   onTabChange?: (tab: string) => void;
+// }
+
+export default function DocumentUpload({ onTabChange }: DocumentUploadProps) {
   const [rows, setRows] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{[key: string]: boolean}>({});
   const [verifyingRows, setVerifyingRows] = useState<{[key: number]: boolean}>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredRows, setFilteredRows] = useState<DocumentRow[]>([]);
+  // const [showReviewCheck, setShowReviewCheck] = useState(false); // Removed
+  const [expandedRow, setExpandedRow] = useState<DocumentRow | null>(null);
+
 
   // Fetch data on component mount
   useEffect(() => {
@@ -363,20 +382,61 @@ export default function DocumentUpload() {
     }
   };
 
+  // Removed showReviewCheck logic if not needed
+
+  const handlePass = async (row: DocumentRow) => {
+    try {
+      console.log("ipdate start")
+      const updatedRow: DocumentRow = {
+        ...row,
+        Status: 'approved',
+        VerificationTime: formatIndianDateTime(new Date()),
+      };
+      console.log("djsbafdkj",updatedRow)
+      await expenditureService.updateExpenditureData(updatedRow);
+      setRows(rows.map(r => r.SNo === row.SNo ? updatedRow : r));
+    } catch (error) {
+      console.error('Error approving document:', error);
+    }
+  };
+
+  const handleReject = async (row: DocumentRow) => {
+    try {
+      console.log("reject start");
+      const updatedRow: DocumentRow = {
+        ...row,
+        Status: 'rejected',
+        VerificationTime: formatIndianDateTime(new Date()),
+      };
+      console.log("reject update", updatedRow);
+      await expenditureService.updateExpenditureData(updatedRow);
+      setRows(rows.map(r => r.SNo === row.SNo ? updatedRow : r));
+    } catch (error) {
+      console.error('Error rejecting document:', error);
+    }
+  };
+
+  if (expandedRow) {
+    return <Expanded row={expandedRow} onClose={() => setExpandedRow(null)} />;
+  }
+
   return (
     <Box
       sx={{
         height: "100%",
-        
         color: "white",
+        background: 'rgba(0,0,0,0)',
+        borderRadius: 10,
         p: 3,
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden"
+        overflow: "hidden",
+        fontFamily: 'Montserrat',
+        
       }}
     >
       {/* Header Section */}
-      <Box sx={{ mb: 0.5 }}>
+      <Box sx={{ mb: 0.5, mr: 2 }}>
         <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", mb: 0.5 }}>
           <Button
             variant="contained"
@@ -391,7 +451,8 @@ export default function DocumentUpload() {
               fontWeight: 600,
               fontSize: "0.8rem",
               px: 2,
-              py: 0.5
+              py: 0.5,
+              letterSpacing: '0.05em',
             }}
           >
             Add New Document
@@ -400,7 +461,8 @@ export default function DocumentUpload() {
       </Box>
 
       {/* Content Section */}
-      <Box sx={{ flex: 1, overflow: "hidden" }}>
+      <Box sx={{ flex: 1, overflow: "hidden", 
+        }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
             <CircularProgress sx={{ color: "#7B2FF7" }} />
@@ -413,9 +475,10 @@ export default function DocumentUpload() {
               alignItems: "center",
               height: "100%",
               color: "rgba(255, 255, 255, 0.5)",
+              
             }}
           >
-            <Typography variant="h6">
+            <Typography variant="h6" sx={{ letterSpacing: '0.05em' }}>
               {searchQuery ? `No documents found for IREPS number: ${searchQuery}` : "No documents added yet"}
             </Typography>
           </Box>
@@ -425,34 +488,96 @@ export default function DocumentUpload() {
               <Card
                 key={row.SNo}
                 sx={{
-                  backgroundColor: "rgba(54, 249, 220, 0.05)",
-                  border: "1px solid rgb(255, 255, 255)",
+                  // backgroundColor: "rgba(255,255,255,0)",
+                  border: "1px solid #e0e0e0",
                   borderRadius: "12px",
                   height: "100%",
-                  boxShadow: "0 8px 25px rgba(123, 247, 247, 0.3)",
+                  boxShadow: "0 8px 25px rgba(80,80,80,0.08)",
                   transition: "transform 0.2s ease-in-out",
                   "&:hover": {
-                    // transform: "translateY(-2px)",
-                    boxShadow: "0 8px 25px rgba(123, 47, 247, 0.3)",
+                    boxShadow: "0 8px 25px rgba(80,80,80,0.15)",
                   },
+                  // background: `url(${bg1}) center center no-repeat`,
+                  // backgroundSize: `${100}% ${100}%`,
+                  background: 'rgba(0,0,0,0.5)',
+                  position: 'relative',
                 }}
               >
-                <CardContent sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
+                {/* Train image overlay */}
+                {/* <Box sx={{ ml: '20%',position: 'absolute', left: 0, right: 0, bottom: 290, display: 'flex', justifyContent: 'center', zIndex: 2, pointerEvents: 'none' }}>
+                  <img src={train} alt="train" style={{ width: 900, opacity: 0.2, color: '#fff', filter: 'brightness(1) invert(1)' }} />
+                </Box> */}
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'left',
+                  // justifyContent: 'center', // Center horizontally
+                  mb: 7,
+                  mt: 7,
+                  width: '100%',
+                }}>
+                  <Box
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      borderRadius: '50%',
+                      background: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      ml: 15,
+                      mr: 10,
+                      mt: 1,
+                      mb: 1,
+                      boxShadow: 2,
+                    }}
+                  >
+                    {/* <CloudUploadIcon sx={{ backgroundColor: '#fff', color: '#000', fontSize: 50 }} /> */}
+                    <img src={cloud} alt="tick" style={{ 
+                        width: 200, 
+                        fontWeight: 700, 
+                        color: '#fff', 
+                        borderRadius: '50%', 
+                        marginTop: 40, 
+                        marginBottom: 30, 
+                        marginLeft: 80, 
+                        marginRight: 70,
+                        // border: '4px solid #fff',
+                        padding: '15px',
+                        // backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }} />
+                  </Box>
+                  <Box sx={{ textAlign: 'left' }}>
+                    <Typography variant="h5" sx={{ color: 'rgba(255,255,255,1)', fontSize: '40px', fontWeight: 700, lineHeight: 1.2 }}>
+                      Document Upload
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '22px', fontWeight: 600, lineHeight: 1.5, }}>
+                      Select and upload the files of your choice
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#bdbdbd', fontSize: '12px', lineHeight: '2', fontWeight: 600, }}>
+                      JPEG, PNG, PDF, and SVG formats, up to 50MB
+                    </Typography>
+                  </Box>
+                </Box>
+                <hr style={{ border: '1px solid rgba(255, 255, 255, 1)', width: '100%' }} />
+
+
+                <CardContent sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column", paddingLeft: '3%', paddingRight: '3%' }}>
                   {/* Top Section - SNo, Status, and IREPS */}
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, mb: 3, border: "2px solid rgba(255, 255, 255, 1)", borderRadius: "12px" }}>
                     {/* SNo - Top Left */}
                     <Box>
-                      <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 0.5, fontSize: "0.8rem" }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: "rgba(255, 255, 255, 1)", mb: 0.5, fontSize: "1rem", letterSpacing: '0.05em' }}>
                         S.No
                       </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: "bold", color: "#7B2FF7", fontSize: "1.2rem" }}>
+                      <Typography variant="h6" sx={{ fontWeight: "bold", color: "#fff", fontSize: "1.2rem", letterSpacing: '0.05em' }}>
                         {row.SNo}
                       </Typography>
                     </Box>
 
                     {/* Status - Center */}
                     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 0.5, fontSize: "0.8rem" }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: "rgba(255, 255, 255, 1)", mb: 0.5, fontSize: "1rem", letterSpacing: '0.05em' }}>
                         Status
                       </Typography>
                       <Chip
@@ -460,7 +585,7 @@ export default function DocumentUpload() {
                         color={getStatusColor(row.Status) as any}
                         size="small"
                         icon={getVerificationIcon(row.Status)}
-                        sx={{ fontWeight: 600, fontSize: "0.8rem", p: 0.5 }}
+                        sx={{ fontWeight: 600, fontSize: "0.8rem", p: 0.5, letterSpacing: '0.05em' }}
                       />
                       {/* {row.Status === "pending" && (
                         <Button
@@ -475,7 +600,8 @@ export default function DocumentUpload() {
                             fontWeight: 600,
                             fontSize: "0.8rem",
                             px: 2,
-                            py: 0.5
+                            py: 0.5,
+                            fontFamily: 'Montserrat, sans-serif',
                           }}
                           onClick={() => handleVerify(row)}
                           disabled={verifyingRows[row.SNo]}
@@ -487,33 +613,41 @@ export default function DocumentUpload() {
 
                     {/* IREPS Number - Top Right */}
                     <Box sx={{ textAlign: "right" }}>
-                      <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 0.5, fontSize: "0.8rem" }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: "rgba(255, 255, 255, 1)", mb: 0.5, fontSize: "1rem", letterSpacing: '0.05em' }}>
                         IREPS Bill No.
                       </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: "bold", color: "white", fontSize: "1.2rem" }}>
+                      <Typography variant="h6" sx={{ fontWeight: "bold", color: "white", fontSize: "1.2rem", letterSpacing: '0.05em' }}>
                         {row.AuthorizationCommittee}
                       </Typography>
                     </Box>
                   </Box>
 
-                  <Divider sx={{ mb: 3, borderColor: "rgba(255, 255, 255, 0.1)" }} />
+                  
+
+                  {/* <Divider sx={{ mb: 3, borderColor: "rgba(255, 255, 255, 0.1)" }} /> */}
 
                   {/* Center Section - Document Upload Buttons */}
-                  <Box sx={{ flex: 1, mb: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: "white", textAlign: "center", fontSize: "1.1rem" }}>
-                      Document Uploads
-                    </Typography>
+                  <Box sx={{ flex: 1, mb: 3, p: 2 }}>
                     
-                    <Box sx={{ display: "flex", justifyContent: "center", gap: 1.5, flexWrap: "wrap" }}>
+                    
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: '100%' }}>
                       {documentTypes.map((docType) => {
                         const file = row[docType.key as keyof DocumentRow] as string | null;
                         const isNull = file === null;
                         const isUploading = uploadingFiles[`${row.SNo}-${docType.key}`];
-                        const uploadTimeKey = `${docType.key}UploadTime`;
-                        const uploadTime = (row as any)[uploadTimeKey] as string | undefined;
-
                         return (
-                          <Box key={docType.key} sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: "100px" }}>
+                          <React.Fragment key={docType.key}>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', minWidth: '320px', py: 1 }}>
+                              {/* Label left aligned */}
+                              <Typography sx={{ flex: 2, textAlign: 'left', fontWeight: 500, fontSize: '1rem', color: '#fff', pl: 1, letterSpacing: '0.05em' }}>
+                                {docType.label}
+                              </Typography>
+                              {/* Success icon in the center if file uploaded */}
+                              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                {file && <CheckCircleIcon color="success" />}
+                              </Box>
+                              {/* Upload button right aligned */}
+                              <label htmlFor={`file-upload-${row.SNo}-${docType.key}`} style={{ flex: 2, display: 'flex', justifyContent: 'flex-end' }}>
                             <input
                               accept="*"
                               style={{ display: "none" }}
@@ -522,49 +656,17 @@ export default function DocumentUpload() {
                               onChange={(e) => handleFileUpload(row.SNo, docType.key as DocumentType, e)}
                               disabled={!isNull || isUploading}
                             />
-                            <label htmlFor={`file-upload-${row.SNo}-${docType.key}`}>
-                              <Tooltip title={!isNull ? "File already uploaded" : `Upload ${docType.label}`} arrow>
-                                <Button
-                                  variant="outlined"
+                                <IconButton
                                   component="span"
-                                  sx={{
-                                    width: '100px',
-                                    height: '80px',
-                                    color: !isNull ? "#4CAF50" : "inherit",
-                                    borderColor: !isNull ? "#4CAF50" : "rgba(255, 255, 255, 0.3)",
-                                    opacity: !isNull ? 0.7 : 1,
-                                    '&.Mui-disabled': {
-                                      color: '#4CAF50',
-                                      borderColor: '#4CAF50',
-                                    },
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 0.5
-                                  }}
                                   disabled={!isNull || isUploading}
+                                  sx={{ color: !isNull ? '#fff' : 'inherit', p: 1, border: '2px solid rgba(255,255,255,1)', background: 'white' }}
                                 >
-                                  {isUploading ? (
-                                    <CircularProgress size={20} color="inherit" />
-                                  ) : (
-                                    <>
-                                      <Typography variant="h6" sx={{ fontSize: '1.5rem' }}>
-                                        {docType.icon}
-                                      </Typography>
-                                      <Typography variant="caption" sx={{ fontSize: '0.7rem', textAlign: 'center', fontWeight: 500 }}>
-                                        {docType.label}
-                                      </Typography>
-                                    </>
-                                  )}
-                                </Button>
-                              </Tooltip>
+                                  {isUploading ? <CircularProgress size={18} color="inherit" /> : <CloudUploadIcon />}
+                                </IconButton>
                             </label>
-                            {/* Show upload time below the button if available */}
-                            {uploadTime && (
-                              <Typography variant="caption" sx={{ color: '#aaa', mt: 0.5, fontSize: '0.6rem', textAlign: 'center' }}>
-                                {formatIndianDateTime(new Date(uploadTime))}
-                              </Typography>
-                            )}
                           </Box>
+                            <Divider sx={{ width: '100%', background: 'rgba(255,255,255,0.15)' }} />
+                          </React.Fragment>
                         );
                       })}
                     </Box>
@@ -587,17 +689,36 @@ export default function DocumentUpload() {
                           fontSize: "1rem",
                           px: 4,
                           py: 1.5,
-                          background: "linear-gradient(90deg, #4CAF50, #45a049)"
+                          color: 'black',
+                          background: "linear-gradient(90deg,rgb(255, 255, 255),rgb(255, 255, 255))",
+                          letterSpacing: '0.05em',
                         }}
                         onClick={() => handleVerify(row)}
                         disabled={row.Status !== 'pending' || verifyingRows[row.SNo]}
                       >
-                        {verifyingRows[row.SNo] ? "Verifying..." : "Verify by AI"}
+                        {verifyingRows[row.SNo] ? "Verifying..." : "Verify using AI agent"}
                       </Button>
                     </Box>
+                    {/* Pass, Reject, Review Check Buttons */}
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', mt: 10 }}>
+                      <Button 
+                        sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }}
+                        onClick={() => handlePass(row)}
+                        // disabled={row.Status === 'approved'}
+                      >
+                        Pass
+                      </Button>
+                      <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }} onClick={() => handleReject(row)}>Reject</Button>
+                      <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }} onClick={() => setExpandedRow(row)}>Review Check</Button>
+                    </Box>
+                    {/* Remove the old ReviewCheck rendering */}
+                    {/* {showReviewCheck && (
+                      <Box sx={{ mt: 3 }}>
+                        <ReviewCheck />
+                      </Box>
+                    )} */}
                   </Box>
 
-                  <Divider sx={{ mb: 3, borderColor: "rgba(255, 255, 255, 0.1)" }} />
 
                   {/* Bottom Section - Remarks */}
                   {/* <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>

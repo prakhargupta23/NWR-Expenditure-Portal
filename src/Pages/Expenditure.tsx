@@ -6,26 +6,51 @@ import DocumentUpload from "../modules/Documentupload";
 import AiChat from "../modules/AiChat";
 import Review from "../modules/Review"
 import ParticlesBackground from "../modules/ParticleBackground";
+import Dashboard from '../modules/Dashboard'
+import train from '../assets/Train.png';
+import bg1 from '../assets/bg1.jpg';
+import bg2 from '../assets/bg2.jpg';
+import reviewBg from '../assets/bg2.jpg';
+import Expanded from "../modules/expanded";
+import type { DocumentRow } from "../modules/Documentupload";
 
 export default function Expenditure() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [openCsvModal, setOpenCsvModal] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'dashboard' | 'document' | 'review'>('document');
+  const [selectedTab, setSelectedTab] = useState<'dashboard' | 'document' | 'review' | 'expanded'>('document');
+  const [expandedRow, setExpandedRow] = useState<DocumentRow | null>(null);
+
+  const getBackground = () => {
+    if (selectedTab === 'dashboard') return `url(${bg1}) center center / cover no-repeat `;
+    if (selectedTab === 'document') return `url(${bg1}) center center / cover no-repeat `;
+    if (selectedTab === 'review') return `url(${bg2}) center center / cover no-repeat `;
+    return '#000';
+  };
 
   return (
     <div
       style={{
         width: "100vw",
+        maxWidth: "100vw",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#101319",
+        background: getBackground(),
+        backgroundSize: `${100}% ${100}%`,
+        // background: '#000',
         alignItems: "center",
-        overflow: "hidden"
+        overflow: "hidden",
+        overflowX: "hidden",
+        boxSizing: "border-box",
+        padding: 0,
+        margin: 0,
       }}
     >
-      <div
+      <Box sx={{ ml: '20%',position: 'absolute', left: 0, right: 0, bottom: 100, display: 'flex', justifyContent: 'center', zIndex: 2, pointerEvents: 'none' }}>
+        <img src={train} alt="train" style={{ width: 900, opacity: 0.3, color: '#fff', filter: 'brightness(1) invert(1)' }} />
+      </Box>
+      {/* <div
         style={{
           position: "fixed",
           top: 0,
@@ -37,7 +62,7 @@ export default function Expenditure() {
         }}
       >
         <ParticlesBackground />
-      </div>
+      </div> */}
       <ExpenditureBar 
         extraButton={false}
         deleteLoading={deleteLoading}
@@ -109,10 +134,10 @@ export default function Expenditure() {
       {/* Main Content Section */}
       <Box
         sx={{
-          width: "95%",
+          width: "90%",
           minHeight: "calc(100vh - 78px - 64px)", // Subtracts AppBar and tab height from total height
           marginTop: "0px",
-          marginBottom: "20px",
+          marginBottom: "10px",
         }}
       >
         <Grid
@@ -139,7 +164,7 @@ export default function Expenditure() {
                 minHeight: "100%",
               }}
             >
-              <DocumentUpload />
+              <DocumentUpload onTabChange={setSelectedTab} />
             </Grid>
           )}
           {/* Dashboard Section */}
@@ -159,7 +184,8 @@ export default function Expenditure() {
                 fontWeight: 600,
               }}
             >
-              Dashboard (Coming Soon)
+              {/* Dashboard (Coming Soon) */}
+              <Dashboard/>
             </Grid>
           )}
           {/* Review Check Section */}
@@ -179,6 +205,25 @@ export default function Expenditure() {
               }}
             >
               <LeftDocumentSection />
+            </Grid>
+          )}
+          {/* expanded section */}
+          {expandedRow && (
+            <Grid
+              item
+              xs={12}
+              md={12}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "100%",
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: 'white',
+                
+              }}
+            >
+              <Expanded row={expandedRow} onClose={() => setExpandedRow(null)} />
             </Grid>
           )}
         </Grid>

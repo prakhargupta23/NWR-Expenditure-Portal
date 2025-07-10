@@ -10,7 +10,8 @@ import {
   Badge,
   IconButton,
   CircularProgress,
-  InputAdornment
+  InputAdornment,
+  Table, TableHead, TableRow, TableCell, TableBody, TableContainer
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -20,8 +21,12 @@ import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { expenditureService } from "../services/expenditure.service";
 import Expanded from "./expanded";
+import bg2 from '../assets/bg2.jpg';
+import train from '../assets/Train.png';
+import tick from '../assets/check.png';
 
 interface DocumentRow {
   SNo: number;
@@ -396,15 +401,39 @@ export default function LeftDocumentSection() {
   return (
     <Box
       sx={{
-        width: "100%",
+        width: "95%",
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        borderRadius: "10px",
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        border: "1px solid rgba(255, 255, 255, 1)",
+        // background: `url(${bg2}) center center no-repeat`,
+        // backgroundSize: `${100}% ${100}%`,
+        position: 'relative',
+        mt: '50px',
+        fontFamily: ''
       }}
     >
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, mt: 2, alignItems: "center" }}>
+      {/* <Box sx={{ mr: '20%',position: 'absolute', left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', zIndex: 2, pointerEvents: 'none' }}>
+        <img src={train} alt="train" style={{ width: 900, opacity: 0.1, color: '#fff', filter: 'brightness(1) invert(1)', transform: 'scaleX(-1)' }} />
+      </Box> */}
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mb: 2 }}>
+        {/* <CheckCircleIcon sx={{ color: 'white',border: '#000', pt: 7, pb: 5, pl: 15, pr: 15, fontSize: 60 }} /> */}
+       
+        <img src={tick} alt="tick" style={{ width: 120, color: '#fff', borderRadius: '60%', marginTop: 40, marginBottom: 30, marginLeft: 80, marginRight: 70,}} />
+        
+        
+        <Typography variant="h1" sx={{ fontWeight: 700, fontSize: '2.2rem', ml: 1 }}>
+          Review Check
+        </Typography>
+      </Box>
+      <hr style={{ border: '1px solid rgba(255, 255, 255, 1)', width: '100%' }} />
+
+      
+      <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 2, alignItems: "center" }}>
         {/* Search Bar */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, maxWidth: "400px" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, maxWidth: "600px", minWidth: '350px' }}>
           <TextField
             placeholder="Search by IREPS number..."
             value={searchQuery}
@@ -417,21 +446,22 @@ export default function LeftDocumentSection() {
             size="small"
             sx={{
               flex: 1,
+              minWidth: '350px',
               '& .MuiOutlinedInput-root': {
-                color: 'white',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                borderRadius: '8px',
+                color: 'black',
+                backgroundColor: 'rgba(254, 254, 254, 1)',
+                borderRadius: '50px',
                 '& fieldset': {
-                  borderColor: '#7B2FF7',
+                  borderColor: '#fff',
                 },
                 '&:hover fieldset': {
-                  borderColor: '#7B2FF7',
+                  borderColor: '#fff',
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: '#7B2FF7',
+                  borderColor: '#fff',
                 },
                 '& input::placeholder': {
-                  color: 'rgba(255, 255, 255, 0.6)',
+                  color: 'rgba(0, 0, 0, 0.5)',
                   opacity: 1,
                 },
               },
@@ -456,13 +486,13 @@ export default function LeftDocumentSection() {
             variant="contained"
             onClick={handleSearch}
             sx={{
-              background: "linear-gradient(90deg, #7B2FF7, #9F44D3)",
-              color: "white",
-              borderRadius: "8px",
+              background: "linear-gradient(90deg,rgb(255, 255, 255),rgb(255, 255, 255))",
+              color: "black",
+              borderRadius: "50px",
               textTransform: "none",
               fontWeight: 600,
               minWidth: "auto",
-              px: 2,
+              px: 3,
             }}
           >
             <SearchIcon />
@@ -484,15 +514,17 @@ export default function LeftDocumentSection() {
           Add New
         </Button> */}
       </Box>
+      
 
       <Paper
         elevation={3}
         sx={{
           flex: 1,
-          borderRadius: "12px",
+          borderRadius: "5px",
           backgroundColor: "rgba(54, 249, 220, 0.005)",
           border: "1px solid rgba(251, 249, 252, 0.2)",
-          overflow: "auto",
+          // overflow: "auto",
+          maxHeight: '200vh',
           "&::-webkit-scrollbar": {
             height: "6px",
           },
@@ -513,8 +545,8 @@ export default function LeftDocumentSection() {
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              height: "100%",
-              color: "rgba(255, 255, 255, 0.5)",
+              height: "50vh",
+              color: "rgba(255, 255, 255, 1)",
             }}
           >
             <Typography variant="h6">
@@ -522,302 +554,48 @@ export default function LeftDocumentSection() {
             </Typography>
           </Box>
         ) : (
-          <Box sx={{ p: 2, width: "100vw", maxWidth: "95%" }}>
-            <Box sx={{ 
-              display: "flex", 
-              gap: 1,
-              width: "max-content",
-              minWidth: "100%",
-              pb: 2
-            }}>
-              {/* Header Row */}
-              <Box sx={{
-                display: "flex",
-                gap: 1,
-                position: "sticky",
-                left: 0,
-                zIndex: 1,
-                mb: 2,
-                width: "max-content",
-                minWidth: "100%"
-              }}>
-                {/* S.No Header */}
-                <Box sx={{
-                  // width: "120px",
-                  width: "22%",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  S.No
-                </Box>
-                {/* Status Header */}
-                <Box sx={{
-                  // width: "100px",
-                  width: "25%",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  Status
-                </Box>
-                {/* Committee Header */}
-                <Box sx={{
-                  // width: "150px",
-                  width: "25%",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  IREPS No.
-                </Box>
-                {/* Document Type Headers (excluding S.No) */}
-                {/* {documentTypes.slice(1).map((type, index) => (
-                   <Box key={index} sx={{ 
-                     width: "120px",
-                     textAlign: "center",
-                     color: "white",
-                     fontWeight: "bold",
-                     flexShrink: 0
-                   }}>
-                     {type}
-                   </Box>
-                 ))} */}
-                {/* Action Header */}
-                {/* <Box sx={{
-                  width: "90px",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  Action
-                </Box> */}
-                {/* Verified At Header */}
-                <Box sx={{
-                  // width: "150px",
-                  width: "23%",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  Verified At
-                </Box>
-                {/* Remarks Header */}
-                {/* <Box sx={{
-                  width: "350px",
-                  textAlign: "center",
-                  color: "white",
-                  fontWeight: "bold",
-                  flexShrink: 0
-                }}>
-                  Remark
-                </Box> */}
-              </Box>
-            </Box>
-
-            {/* Data Rows */}
-            {filteredRows.map((row, rowIndex) => (
-              <Box 
-                key={row["SNo"]}
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  mb: 2,
-                  backgroundColor: "rgba(54, 249, 220, 0.05)",
-                  borderRadius: "8px",
-                  p: 2,
-                  position: "relative",
-                  width: "max-content",
-                  minWidth: "100%",
-                  cursor: "pointer"
-                }}
-                onClick={() => setExpandedRow(row)}
-              >
-                {/* S.No Column */}
-                <Box sx={{ 
-                  // width: "120px",
-                  width: "20%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  color: "white"
-                }}>
-                  {row["SNo"]}
-                </Box>
-
-                {/* Verification Status Column */}
-                <Box sx={{ 
-                  // width: "100px",
-                  width: "25%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}>
-                  <Tooltip title={row.Status} arrow>
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      badgeContent={getVerificationIcon(row.Status)}
-                    >
-                      <Avatar sx={{ 
-                        bgcolor: row.Status === "approved" 
-                          ? "success.main" 
-                          : row.Status === "rejected" 
-                            ? "error.main" 
-                            : "warning.main",
-                        width: 24,
-                        height: 24
-                      }}>
-                        {row.Status.charAt(0).toUpperCase()}
-                      </Avatar>
-                    </Badge>
-                  </Tooltip>
-                </Box>
-
-                {/* Authorization Committee Column */}
-                <Box sx={{ 
-                  // width: "150px",
-                  width: "25%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  color: "white"
-                }}>
-                  {row.AuthorizationCommittee}
-                </Box>
-
-                {/* File Upload Columns */}
-                {/* {Object.entries(row).filter(([key]) => 
-                  ['ReceiptNote', 'TaxInvoice', 'GSTInvoice', 'ModificationAdvice', 'PurchaseOrder', 'InspectionCertificate'].includes(key)
-                ).map(([key, file]) => {
-                  const isNull = file === null;
-                  const isUploading = uploadingFiles[`${row.SNo}-${key}`];
-                  const uploadTimeKey = `${key}UploadTime`;
-                  const uploadTime = (row as any)[uploadTimeKey] as string | undefined;
-                  return (
-                    <Box key={key} sx={{ width: "120px", flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <input
-                        accept="*"
-                        style={{ display: "none" }}
-                        id={`file-upload-${row["SNo"]}-${key}`}
-                        type="file"
-                        onChange={(e) => handleFileUpload(row["SNo"], key as DocumentType, e)}
-                        disabled={!isNull || isUploading}
-                      />
-                      <label htmlFor={`file-upload-${row["SNo"]}-${key}`}>
-                        <Tooltip title={!isNull ? "File already uploaded" : key.replace(/([A-Z])/g, ' $1').trim()} arrow>
-                          <Button
-                            variant="outlined"
-                            component="span"
-                            sx={{
-                              minWidth: '60px',
-                              width: '60px',
-                              height: '40px',
-                              padding: '8px',
-                              color: !isNull ? "#4CAF50" : "inherit",
-                              borderColor: !isNull ? "#4CAF50" : "rgba(255, 255, 255, 0.3)",
-                              opacity: !isNull ? 0.7 : 1,
-                              '&.Mui-disabled': {
-                                color: '#4CAF50',
-                                borderColor: '#4CAF50',
-                              },
-                              '& .MuiButton-startIcon': {
-                                margin: 0
-                              }
-                            }}
-                            disabled={!isNull || isUploading}
-                          >
-                            {isUploading ? (
-                              <CircularProgress size={20} color="inherit" />
-                            ) : (
-                              <CloudUploadIcon />
-                            )}
-                          </Button>
-                        </Tooltip>
-                      </label>
-                      {uploadTime && (
-                        <Typography variant="caption" sx={{ color: '#aaa', mt: 0.5, fontSize: '0.7rem', textAlign: 'center', wordBreak: 'break-all', width: '70px' }}>
-                          {formatIndianDateTime(new Date(uploadTime))}
-                        </Typography>
-                      )}
-                    </Box>
-                  );
-                })} */}
-
-                {/* Verify Button */}
-                {/* <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={verifyingRows[row.SNo] ? <CircularProgress size={20} color="inherit" /> : <VerifiedIcon />}
-                  sx={{
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    minWidth: "90px"
-                  }}
-                  onClick={() => handleVerify(row)}
-                  disabled={row.Status !== "pending" || verifyingRows[row.SNo]}
-                >
-                  {verifyingRows[row.SNo] ? "Verifying..." : "Verify"}
-                </Button> */}
-
-                {/* Verification Time Column */}
-                <Box sx={{ 
-                  // width: "150px",
-                  width: "25%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  color: "white"
-                }}>
-                  {row.VerificationTime || "-"}
-                </Box>
-
-                {/* System Remark Column */}
-                {/* <Box sx={{ 
-                  width: "350px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "flex-start",
-                  flexShrink: 0,
-                  color: "white",
-                  fontStyle: row.Remark ? "normal" : "italic",
-                  fontSize: "0.8rem",
-                  paddingTop: "5px",
-                  maxHeight: "120px",
-                  overflow: "auto",
-                  "&::-webkit-scrollbar": {
-                    width: "6px",
-                  },
-                  "&::-webkit-scrollbar-track": {
-                    background: "#1E2130",
-                    borderRadius: "3px",
-                  },
-                  "&::-webkit-scrollbar-thumb": {
-                    background: "#7B2FF7",
-                    borderRadius: "3px",
-                  },
-                  padding: "8px 16px",
-                  wordBreak: "break-word",
-                  backgroundColor: "rgba(0, 0, 0, 0.2)",
-                  borderRadius: "4px",
-                  margin: "0 8px",
-                  whiteSpace: "pre-line"
-                }}>
-                  {row.Remark || "Pending review"}
-                </Box> */}
-              </Box>
-            ))}
-          </Box>
+          <TableContainer sx={{ maxHeight: '100vh', minWidth: '100%' }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>S.No</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Status</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>IREPS No.</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Verified At</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredRows.map((row) => (
+                  <TableRow key={row.SNo} hover sx={{ cursor: 'pointer', background: "rgba(0, 0, 0, 0.5)" }} onClick={() => setExpandedRow(row)}>
+                    <TableCell align="center" sx={{ color: 'white' }}>{row.SNo}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title={row.Status} arrow>
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          badgeContent={getVerificationIcon(row.Status)}
+                        >
+                          <Avatar sx={{
+                            bgcolor: row.Status === "approved"
+                              ? "success.main"
+                              : row.Status === "rejected"
+                                ? "error.main"
+                                : "warning.main",
+                            width: 24,
+                            height: 24
+                          }}>
+                            {row.Status.charAt(0).toUpperCase()}
+                          </Avatar>
+                        </Badge>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell align="center" sx={{ color: 'white' }}>{row.AuthorizationCommittee}</TableCell>
+                    <TableCell align="center" sx={{ color: 'white' }}>{row.VerificationTime || '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </Paper>
     </Box>
