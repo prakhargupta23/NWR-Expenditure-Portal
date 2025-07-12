@@ -147,6 +147,66 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     }
   };
 
+  const handleVerifyByAI = async () => {
+    setLoading(true);
+    try {
+      console.log("Starting verification for row:", row);
+      const response = await expenditureService.reportVerification(row);
+      console.log("Verification response:", response);
+      
+      // Ensure we're handling the response properly
+      let status: "approved" | "rejected" = "rejected";
+      let formattedRemark = '';
+
+      if (response) {
+        // Check the status from the response object
+        status = response.Status === "approved" || response.Status === "Approved" ? "approved" : "rejected";
+        console.log("Determined status:", status, response.Status);
+        console.log("Matched results",response.MatchedResults)
+        console.log("Unmatched results",response.UnmatchedResults)
+        
+        // Format the remarks as bulleted points if Results array exists
+        if (response.MatchedResults && Array.isArray(response.MatchedResults)) {
+          formattedRemark = [
+            'Unmatched Results',
+            response.UnmatchedResults.map((result: string) => `• ${result}`).join('\n'),
+            '',
+            'Matched Results',
+            response.MatchedResults.map((result: string) => `• ${result}`).join('\n'),
+          ].join('\n')
+          console.log("formatted remark",formattedRemark)
+        } else if (response.Reason) {
+          formattedRemark = response.Reason;
+        }
+
+        const updatedRow: DocumentRow = {
+          ...row,
+          Status: status,
+          Remark: formattedRemark,
+          VerificationTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        };
+
+        console.log("Preparing to update database with row:", {
+          SNo: updatedRow.SNo,
+          Status: updatedRow.Status,
+          Remark: updatedRow.Remark
+        });
+
+        // Update the backend
+        await expenditureService.updateExpenditureData(updatedRow);
+        
+        // Update the local row state
+        Object.assign(row, updatedRow);
+        
+        console.log("Row updated successfully");
+      }
+    } catch (error) {
+      console.error('Error verifying by AI:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Paper elevation={4} sx={{ p: 2, m: 2, borderRadius: 10, backgroundColor: "rgba(0, 0, 0, 0)", color: 'white', width: '95%' }}>
       {/* Document Details Table */}
@@ -203,6 +263,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                     component="label"
                     size="small"
                     sx={{ background: 'rgb(0, 9, 129)', color: '#fff', fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                    disabled={row.Status !== 'pending' || !!row[field.key as keyof DocumentRow]}
                   >
                     Upload
                     <input
@@ -228,17 +289,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
           variant="contained"
           color="secondary"
           disabled={loading || row.Status !== 'pending'}
-          onClick={async () => {
-            setLoading(true);
-            try {
-              await expenditureService.reportVerification(row);
-              // Optionally, refresh or show a success message
-            } catch (error) {
-              console.error('Error verifying by AI:', error);
-            } finally {
-              setLoading(false);
-            }
-          }}
+          onClick={handleVerifyByAI}
           sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', background: '#00C49F', color: '#fff', px: 4, py: 1.5 }}
         >
           {loading ? 'Verifying...' : 'Verify by AI'}

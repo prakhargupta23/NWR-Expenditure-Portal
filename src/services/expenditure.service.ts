@@ -95,6 +95,18 @@ export const expenditureService = {
     }
   },
 
+  // Get GST invoice data
+  getGstInvoiceData: async () => {
+    try {
+      const response = await axios.get(`${config.apiUrl}/api/get-gstinvoice-data`);
+      console.log("fetched GST invoice data", response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching GST invoice data:', error);
+      throw error;
+    }
+  },
+
   // Update expenditure data
   updateExpenditureData: async (rowData: any) => {
     try {

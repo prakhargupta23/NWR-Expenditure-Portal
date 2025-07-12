@@ -84,12 +84,7 @@ const pieData = [
   { name: "In Review", value: 100 },
 ];
 
-const pieData2 = [
-  { name: "Receipt Note", value: 120 },
-  { name: "Tax Invoice", value: 90 },
-  { name: "GST Invoice", value: 60 },
-  { name: "Other", value: 30 },
-];
+
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
@@ -224,6 +219,10 @@ export default function Dashboard() {
     { name: 'Nov', documents: 0, reviews: 0, approvals: 0 },
     { name: 'Dec', documents: 0, reviews: 0, approvals: 0 },
   ]);
+  const [pieData2, setPieData2] = useState<Array<{ name: string; value: number }>>([
+    { name: "Approved Amount", value: 0 },
+    { name: "Rejected Amount", value: 0 },
+  ]);
   const [loading, setLoading] = useState(true);
 
 
@@ -270,6 +269,52 @@ export default function Dashboard() {
         { name: "Rejected", count: rejected },
         { name: "Total", count: total }
       ]);
+
+      // Filter SNo and Status for GST invoice calculation
+      const filteredSNoStatus = filtered.map(row => ({
+        SNo: row.SNo,
+        Status: row.Status
+      }));
+
+      // Fetch GST invoice data
+      try {
+        const gstInvoiceRes = await expenditureService.getGstInvoiceData();
+        const gstInvoiceData = gstInvoiceRes.data || [];
+        
+        // Calculate approved and rejected amounts
+        let approvedAmount = 0;
+        let rejectedAmount = 0;
+        
+        gstInvoiceData.forEach((gstRow: any) => {
+          const matchingRow = filteredSNoStatus.find(row => row.SNo === gstRow.SNo);
+          if (matchingRow && gstRow.InvoiceAmount) {
+            const amount = parseFloat(gstRow.InvoiceAmount) || 0;
+            if (matchingRow.Status.toLowerCase() === 'approved') {
+              approvedAmount += amount;
+              console.log("approved amt adding",amount)
+            } else if (matchingRow.Status.toLowerCase() === 'rejected') {
+              rejectedAmount += amount;
+              console.log("rejected amt adding",amount)
+            }
+          }
+        });
+        
+        
+        const newPieData = [
+          { name: "Approved Amount", value: approvedAmount },
+          { name: "Rejected Amount", value: rejectedAmount },
+        ];
+        
+        setPieData2(newPieData);
+        console.log("Pie chart data:", newPieData);
+        console.log("Pie chart data:", { approvedAmount, rejectedAmount });
+      } catch (gstError) {
+        console.error('Error fetching GST invoice data:', gstError);
+        setPieData2([
+          { name: "Approved Amount", value: 0 },
+          { name: "Rejected Amount", value: 0 },
+        ]);
+      }
     } catch (e) {
       setStatusCounts([
         { name: "Approved", count: 0 },
@@ -298,6 +343,10 @@ export default function Dashboard() {
         { name: 'Oct', documents: 0, reviews: 0, approvals: 0 },
         { name: 'Nov', documents: 0, reviews: 0, approvals: 0 },
         { name: 'Dec', documents: 0, reviews: 0, approvals: 0 },
+      ]);
+      setPieData2([
+        { name: "Approved Amount", value: 0 },
+        { name: "Rejected Amount", value: 0 },
       ]);
     }
     setLoading(false);
@@ -357,7 +406,7 @@ export default function Dashboard() {
                   <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mb={1}>
                     <Chip label="Approved" color="success" size="medium" />
                   </Stack>
-                  <Typography variant="h4" color="#4caf50" align="center" fontWeight={700}>
+                  <Typography variant="h5" color="#4caf50" align="center" fontWeight={700}>
                     {statusCounts.find(s => s.name === "Approved")?.count ?? 0}
                   </Typography>
                 </CardContent>
@@ -370,7 +419,7 @@ export default function Dashboard() {
                   <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mb={1}>
                     <Chip label="Total" color="warning" size="medium" />
                   </Stack>
-                  <Typography variant="h4" color="#ff9800" align="center" fontWeight={700}>
+                  <Typography variant="h5" color="#ff9800" align="center" fontWeight={700}>
                     {statusCounts.find(s => s.name === "Total")?.count ?? 0}
                   </Typography>
                 </CardContent>
@@ -383,8 +432,50 @@ export default function Dashboard() {
                   <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mb={1}>
                     <Chip label="Rejected" color="error" size="medium" />
                   </Stack>
-                  <Typography variant="h4" color="#f44336" align="center" fontWeight={700}>
+                  <Typography variant="h5" color="#f44336" align="center" fontWeight={700}>
                     {statusCounts.find(s => s.name === "Rejected")?.count ?? 0}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Approved Amount */}
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+                <CardContent>
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mb={1}>
+                    <Chip label="Approved Amount" color="success" size="medium" />
+                  </Stack>
+                  <Typography variant="h5" color="#4caf50" align="center" fontWeight={700}>
+                    ₹{pieData2.find(s => s.name === "Approved Amount")?.value.toLocaleString() ?? 0}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Total Amount */}
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+                <CardContent>
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mb={1}>
+                    <Chip label="Total Amount" color="warning" size="medium" />
+                  </Stack>
+                  <Typography variant="h5" color="#ff9800" align="center" fontWeight={700}>
+                    ₹{(pieData2.find(s => s.name === "Approved Amount")?.value ?? 0) + (pieData2.find(s => s.name === "Rejected Amount")?.value ?? 0)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Rejected Amount */}
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+                <CardContent>
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mb={1}>
+                    <Chip label="Rejected Amount" color="error" size="medium" />
+                  </Stack>
+                  <Typography variant="h5" color="#f44336" align="center" fontWeight={700}>
+                    ₹{pieData2.find(s => s.name === "Rejected Amount")?.value.toLocaleString() ?? 0}
                   </Typography>
                 </CardContent>
               </Card>
@@ -465,25 +556,54 @@ export default function Dashboard() {
             {/* Pie Chart 2 */}
             <Grid item xs={12} md={5}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <CardContent sx={{ p: 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontSize: '1rem' }}>Document Type Distribution</Typography>
-                  <PieChart width={140} height={140}>
-                    <Pie
-                      data={pieData2}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={55}
-                      fill="#00C49F"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      // labelStyle={{ fontSize: '0.7rem' }}
-                    >
-                      {pieData2.map((entry, index) => (
-                        <Cell key={`cell2-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={{ fontSize: '0.7rem' }} iconSize={10} />
-                  </PieChart>
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontSize: '1rem' }}>Amount Distribution (Approved vs Rejected)</Typography>
+                  {loading ? (
+                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : pieData2.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={pieData2}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={70}
+                          fill="#00C49F"
+                          dataKey="value"
+                          nameKey="name"
+                          label={false}
+                        >
+                          {pieData2.map((entry, index) => (
+                            <Cell key={`cell2-${index}`} fill={
+                              entry.name === "Approved Amount" ? "#4caf50" : "#f44336"
+                            } />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const { name, value } = payload[0].payload;
+                              return (
+                                <Box sx={{ background: '#fff', p: 1, borderRadius: 1, boxShadow: 2, minWidth: 120 }}>
+                                  <Typography variant="subtitle2" sx={{ color: '#222', fontWeight: 700 }}>{name}</Typography>
+                                  <Typography variant="body2" sx={{ color: '#222' }}>Amount: ₹{value.toLocaleString()}</Typography>
+                                </Box>
+                              );
+                            }
+                            return null;
+                          }}
+                          cursor={false}
+                        />
+                        <Legend wrapperStyle={{ fontSize: '0.8rem' }} iconSize={12} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
+                      <Typography variant="body2" sx={{ color: '#666' }}>No data available</Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
