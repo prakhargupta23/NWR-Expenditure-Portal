@@ -39,8 +39,8 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
   const { matched, unmatched } = parseMatchedUnmatched(row.Remark);
   // Combine unmatched first, then matched
   const allPoints = [
-    ...unmatched.map(point => ({ point, status: 'unmatched' as const })),
-    ...matched.map(point => ({ point, status: 'matched' as const })),
+    ...unmatched.map(point => ({ point, status: 'Mismatch' as const })),
+    ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
   const [selected, setSelected] = useState<boolean[]>(Array(allPoints.length).fill(false));
   const [updateStatus, setUpdateStatus] = useState<string[]>(Array(allPoints.length).fill('Pending'));
@@ -68,11 +68,11 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
         <Typography variant="body2" sx={{ color: '#444' }}>No review remarks available.</Typography>
       ) : (
         <>
-          <TableContainer sx={{ maxHeight: 350, overflowY: 'auto', background: "rgba(0, 0, 0, 0.5)" }}>
+          <TableContainer sx={{ maxHeight: 500, overflowY: 'auto', background: "rgba(0, 0, 0, 0.5)" }}>
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Select</TableCell>
+                  {/* <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Select</TableCell> */}
                   <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Subject</TableCell>
                   <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
                   <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Update Status</TableCell>
@@ -81,11 +81,11 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
               <TableBody>
                 {allPoints.map(({ point, status }, idx) => (
                   <TableRow key={idx}>
-                    <TableCell sx={{ textAlign: 'center', }}>
-                      <Checkbox checked={selected[idx]} onChange={() => handleCheckbox(idx)} />
-                    </TableCell>
-                    <TableCell sx={{ color: '#fff', textAlign: 'center' }}>{point}</TableCell>
-                    <TableCell sx={{ color: status === 'matched' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
+                    {/* <TableCell sx={{ textAlign: 'center', }}>
+                      <Checkbox sx = {{color: '#fff'}} checked={selected[idx]} onChange={() => handleCheckbox(idx)} />
+                    </TableCell> */}
+                    <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{point}</TableCell>
+                    <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>
                       <Select
                         value={updateStatus[idx]}

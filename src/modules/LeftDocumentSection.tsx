@@ -418,22 +418,13 @@ export default function LeftDocumentSection() {
       {/* <Box sx={{ mr: '20%',position: 'absolute', left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', zIndex: 2, pointerEvents: 'none' }}>
         <img src={train} alt="train" style={{ width: 900, opacity: 0.1, color: '#fff', filter: 'brightness(1) invert(1)', transform: 'scaleX(-1)' }} />
       </Box> */}
-      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mb: 2 }}>
-        {/* <CheckCircleIcon sx={{ color: 'white',border: '#000', pt: 7, pb: 5, pl: 15, pr: 15, fontSize: 60 }} /> */}
-       
-        <img src={tick} alt="tick" style={{ width: 120, color: '#fff', borderRadius: '60%', marginTop: 40, marginBottom: 30, marginLeft: 80, marginRight: 70,}} />
-        
-        
-        <Typography variant="h1" sx={{ fontWeight: 700, fontSize: '2.2rem', ml: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mb: 2, justifyContent: 'space-between' }}>
+        {/* Left: Title */}
+        <Typography variant="h1" sx={{ fontWeight: 700, fontSize: '2.0rem', ml: 10, mt: 3 }}>
           Review Check
         </Typography>
-      </Box>
-      <hr style={{ border: '1px solid rgba(255, 255, 255, 1)', width: '100%' }} />
-
-      
-      <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 2, alignItems: "center" }}>
-        {/* Search Bar */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, maxWidth: "600px", minWidth: '350px' }}>
+        {/* Right: Search Bar */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, maxWidth: "600px", minWidth: '350px', mt: 3, mr: 7  }}>
           <TextField
             placeholder="Search by IREPS number..."
             value={searchQuery}
@@ -446,7 +437,7 @@ export default function LeftDocumentSection() {
             size="small"
             sx={{
               flex: 1,
-              minWidth: '350px',
+              minWidth: '450px',
               '& .MuiOutlinedInput-root': {
                 color: 'black',
                 backgroundColor: 'rgba(254, 254, 254, 1)',
@@ -498,22 +489,8 @@ export default function LeftDocumentSection() {
             <SearchIcon />
           </Button>
         </Box>
-        
-        {/* <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={addNewRow}
-          sx={{
-            background: "linear-gradient(90deg, #7B2FF7, #9F44D3)",
-            color: "white",
-            borderRadius: "8px",
-            textTransform: "none",
-            fontWeight: 600,
-          }}
-        >
-          Add New
-        </Button> */}
       </Box>
+      <hr style={{ border: '1px solid rgba(255, 255, 255, 1)', width: '100%' }} />
       
 
       <Paper
@@ -521,10 +498,10 @@ export default function LeftDocumentSection() {
         sx={{
           flex: 1,
           borderRadius: "5px",
-          backgroundColor: "rgba(54, 249, 220, 0.005)",
+          backgroundColor: "rgba(54, 249, 220, 0.1)",
           border: "1px solid rgba(251, 249, 252, 0.2)",
           // overflow: "auto",
-          maxHeight: '200vh',
+          maxHeight: '220vh',
           "&::-webkit-scrollbar": {
             height: "6px",
           },
@@ -558,10 +535,10 @@ export default function LeftDocumentSection() {
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>S.No</TableCell>
-                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Status</TableCell>
-                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>IREPS No.</TableCell>
-                  <TableCell sx={{ background: "rgba(0, 0, 0, 0.8)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Verified At</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>S.No</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Status</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>IREPS No.</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Verified At</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

@@ -22,8 +22,8 @@ export default function Expenditure() {
   const [expandedRow, setExpandedRow] = useState<DocumentRow | null>(null);
 
   const getBackground = () => {
-    if (selectedTab === 'dashboard') return `url(${bg1}) center center / cover no-repeat `;
-    if (selectedTab === 'document') return `url(${bg1}) center center / cover no-repeat `;
+    if (selectedTab === 'dashboard') return `url(${bg2}) center center / cover no-repeat `;
+    if (selectedTab === 'document') return `url(${bg2}) center center / cover no-repeat `;
     if (selectedTab === 'review') return `url(${bg2}) center center / cover no-repeat `;
     return '#000';
   };
@@ -50,7 +50,7 @@ export default function Expenditure() {
       <Box sx={{ ml: '20%',position: 'absolute', left: 0, right: 0, bottom: 100, display: 'flex', justifyContent: 'center', zIndex: 2, pointerEvents: 'none' }}>
         <img src={train} alt="train" style={{ width: 900, opacity: 0.3, color: '#fff', filter: 'brightness(1) invert(1)' }} />
       </Box>
-      {/* <div
+      <div
         style={{
           position: "fixed",
           top: 0,
@@ -62,7 +62,7 @@ export default function Expenditure() {
         }}
       >
         <ParticlesBackground />
-      </div> */}
+      </div>
       <ExpenditureBar 
         extraButton={false}
         deleteLoading={deleteLoading}
@@ -82,7 +82,7 @@ export default function Expenditure() {
           <Button
             onClick={() => setSelectedTab('dashboard')}
             sx={{
-              background: selectedTab === 'dashboard' ? 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))' : '#23263a',
+              background: selectedTab === 'dashboard' ? 'linear-gradient(90deg, rgba(54, 249, 220, 1), rgba(54, 249, 220, 1))' : '#23263a',
               color: 'white',
               fontWeight: 600,
               borderRadius: '8px 0 0 8px',

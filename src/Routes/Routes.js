@@ -8,7 +8,7 @@ import Expenditure from "../Pages/Expenditure"
 
 export const routes = createBrowserRouter([
   {
-    path: "/dashboard",
+    path: "/Expenditure",
     element: (
       <PrivateRoute>
         <Expenditure />
@@ -17,7 +17,7 @@ export const routes = createBrowserRouter([
   },
   {
     path: "/*",
-    element: <Expenditure />,
+    element: <LoginPage />,
   },
   // {
   //   path: "/pfa",

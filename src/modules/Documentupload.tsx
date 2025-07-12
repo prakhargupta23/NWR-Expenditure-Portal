@@ -444,7 +444,7 @@ export default function DocumentUpload({ onTabChange }: DocumentUploadProps) {
             startIcon={<AddIcon />}
             onClick={addNewRow}
             sx={{
-              background: 'linear-gradient(90deg, rgba(54, 249, 220, 0.2), rgba(54, 249, 220, 0.5))',
+              background: 'linear-gradient(90deg, rgba(54, 249, 220, 0.4), rgba(54, 249, 220, 0.5))',
               color: "white",
               borderRadius: "6px",
               textTransform: "none",
@@ -512,14 +512,14 @@ export default function DocumentUpload({ onTabChange }: DocumentUploadProps) {
                   flexDirection: 'row',
                   alignItems: 'left',
                   // justifyContent: 'center', // Center horizontally
-                  mb: 7,
-                  mt: 7,
+                  mb: 0,
+                  mt: 1,
                   width: '100%',
                 }}>
                   <Box
                     sx={{
-                      width: 100,
-                      height: 100,
+                      width: 70,
+                      height: 70,
                       borderRadius: '50%',
                       background: 'white',
                       display: 'flex',
@@ -527,36 +527,34 @@ export default function DocumentUpload({ onTabChange }: DocumentUploadProps) {
                       justifyContent: 'center',
                       ml: 15,
                       mr: 10,
-                      mt: 1,
+                      mt: 2,
                       mb: 1,
-                      boxShadow: 2,
+                      // boxShadow: 2,
                     }}
                   >
                     {/* <CloudUploadIcon sx={{ backgroundColor: '#fff', color: '#000', fontSize: 50 }} /> */}
                     <img src={cloud} alt="tick" style={{ 
-                        width: 200, 
-                        fontWeight: 700, 
+                        width: 50, 
+                        fontWeight: 400, 
                         color: '#fff', 
                         borderRadius: '50%', 
-                        marginTop: 40, 
-                        marginBottom: 30, 
+                        marginTop: 10, 
+                        marginBottom: 5, 
                         marginLeft: 80, 
                         marginRight: 70,
                         // border: '4px solid #fff',
-                        padding: '15px',
+                        padding: '5px',
                         // backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     }} />
                   </Box>
-                  <Box sx={{ textAlign: 'left' }}>
-                    <Typography variant="h5" sx={{ color: 'rgba(255,255,255,1)', fontSize: '40px', fontWeight: 700, lineHeight: 1.2 }}>
+                  <Box sx={{ textAlign: 'left',mt: 3,mb: 1 }}>
+                    <Typography variant="h5" sx={{ color: 'rgba(255,255,255,1)', fontSize: '30px', fontWeight: 700, lineHeight: 1.2, }}>
                       Document Upload
                     </Typography>
-                    <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '22px', fontWeight: 600, lineHeight: 1.5, }}>
+                    <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 600, lineHeight: 1.5, }}>
                       Select and upload the files of your choice
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#bdbdbd', fontSize: '12px', lineHeight: '2', fontWeight: 600, }}>
-                      JPEG, PNG, PDF, and SVG formats, up to 50MB
-                    </Typography>
+                    
                   </Box>
                 </Box>
                 <hr style={{ border: '1px solid rgba(255, 255, 255, 1)', width: '100%' }} />
@@ -700,16 +698,19 @@ export default function DocumentUpload({ onTabChange }: DocumentUploadProps) {
                       </Button>
                     </Box>
                     {/* Pass, Reject, Review Check Buttons */}
-                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', mt: 10 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, width: '60%', mt: 10, }}>
                       <Button 
-                        sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }}
-                        onClick={() => handlePass(row)}
-                        // disabled={row.Status === 'approved'}
-                      >
-                        Pass
+                        sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 2, borderRadius: 2, 
+                          background: row.Status === 'pending'? 'rgb(246, 186, 47)' : (row.Status === 'approved'? 'rgb(58, 255, 51)':'rgb(254, 22, 22)'), 
+                          color: '#fff', }}
+                        // onClick={() => handlePass(row)}
+                      > 
+                        {row.Status === 'pending'? 'Pending': (row.Status === 'approved'? 'Pass':'Reject')}
                       </Button>
-                      <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }} onClick={() => handleReject(row)}>Reject</Button>
-                      <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }} onClick={() => setExpandedRow(row)}>Review Check</Button>
+                      {/* <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 3, borderRadius: 2, background: '#fff', color: '#000', }} onClick={() => handleReject(row)}>Reject</Button> */}
+                      <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1.1rem", py: 2, borderRadius: 2, background: '#fff', color: '#000', }} onClick={() => setExpandedRow(row)}>Review Check</Button>
+                    </Box>
                     </Box>
                     {/* Remove the old ReviewCheck rendering */}
                     {/* {showReviewCheck && (

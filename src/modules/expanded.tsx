@@ -32,9 +32,36 @@ const docFields = [
   { key: "InspectionCertificate", label: "Inspection Certificate" },
 ];
 
+const parseMatchedUnmatched = (remark: string) => {
+  if (!remark) return { matched: [], unmatched: [] };
+  const lines = remark.split(/\n|\r/).map(line => line.trim());
+  let matched: string[] = [], unmatched: string[] = [];
+  let current: 'matched' | 'unmatched' | null = null;
+  for (const line of lines) {
+    if (/^Matched Results$/i.test(line)) {
+      current = 'matched';
+      continue;
+    }
+    if (/^Unmatched Results$/i.test(line)) {
+      current = 'unmatched';
+      continue;
+    }
+    if (line.startsWith('•')) {
+      if (current === 'matched') matched.push(line.slice(1).trim());
+      else if (current === 'unmatched') unmatched.push(line.slice(1).trim());
+    }
+  }
+  return { matched, unmatched };
+};
+
 const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   const [showReviewCheck, setShowReviewCheck] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { matched, unmatched} = parseMatchedUnmatched(row.Remark);
+  const allPoints = [
+    ...unmatched.map(point => ({ point, status: 'Mismatch' as const })),
+    ...matched.map(point => ({ point, status: 'Match' as const })),
+  ];
 
   if (showReviewCheck) {
   return (
@@ -83,6 +110,34 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     }
   };
 
+  const handleFileUpload = async (docType: string, file: File) => {
+    setLoading(true);
+    try {
+      type DocumentTypeKey =
+        | "ReceiptNote"
+        | "TaxInvoice"
+        | "GSTInvoice"
+        | "ModificationAdvice"
+        | "PurchaseOrder"
+        | "InspectionCertificate";
+      await expenditureService.getdata(file, docType as DocumentTypeKey, row.SNo);
+
+      // Update the row to reflect the uploaded document
+      row[docType as DocumentTypeKey] = file.name; // or `true` if you don't want to show the name
+
+      // Update the row in the database
+      await expenditureService.updateExpenditureData(row);
+
+      // If you want to trigger a re-render, use a state for row and update it here
+      // setRow({ ...row, [docType]: file.name });
+
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Paper elevation={4} sx={{ p: 2, m: 2, borderRadius: 10, backgroundColor: "rgba(0, 0, 0, 0)", color: 'white', width: '95%' }}>
       {/* Document Details Table */}
@@ -115,7 +170,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
             <TableRow>
               <TableCell sx={{ color: '#fff', fontWeight: 700, textAlign: 'left' }}>Document Type</TableCell>
               <TableCell sx={{ color: '#fff', fontWeight: 700, textAlign: 'center' }}>Status</TableCell>
-              <TableCell sx={{ color: '#fff', fontWeight: 700, textAlign: 'center' }}>Approved by</TableCell>
+              <TableCell sx={{ color: '#fff', fontWeight: 700, textAlign: 'center' }}>Upload</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -133,18 +188,105 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ color: '#fff', textAlign: 'center' }}>AI</TableCell>
+                <TableCell sx={{ color: '#fff', textAlign: 'center' }}>
+                  <Button
+                    variant="contained"
+                    component="label"
+                    size="small"
+                    sx={{ background: 'rgb(0, 9, 129)', color: '#fff', fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                  >
+                    Upload
+                    <input
+                      type="file"
+                      hidden
+                      onChange={e => {
+                        if (e.target.files && e.target.files[0]) {
+                          // Call a handler for file upload, pass field.key and file
+                          handleFileUpload(field.key, e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, width: '90%', mt: 10, pl: 8, pr: 5, }}>
-        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1rem", p: 3, borderRadius: 4, background: '#fff', color: '#000', }} onClick={handlePassAndGenerate} disabled={loading}>
+      {/* Add Verify by AI button below the upload table */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Button
+          variant="contained"
+          color="secondary"
+          disabled={loading || row.Status !== 'pending'}
+          onClick={async () => {
+            setLoading(true);
+            try {
+              await expenditureService.reportVerification(row);
+              // Optionally, refresh or show a success message
+            } catch (error) {
+              console.error('Error verifying by AI:', error);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', background: '#00C49F', color: '#fff', px: 4, py: 1.5 }}
+        >
+          {loading ? 'Verifying...' : 'Verify by AI'}
+        </Button>
+      </Box>
+      {/* <Box sx={{
+        dispaly: 'flex', flexDirection: 'row',alignItems: 'center',width: '100%',justifyContent: 'center',mt: 7,background: 'rgba(0,0,0,0.5)',pt: 6, p: 5,borderRadius: 5, height:'50vh',overflowY: 'auto',overflow: 'hidden'
+      }}>
+        
+
+      <Box sx={{m:0,height: '50vh', overflowY: 'auto',position: 'relative'}}> */}
+
+        {/* <Typography sx={{color: '#f44336',fontWeight:700}}>Not Matching</Typography>
+        <ul>
+          {unmatched.map((point,idx) =>  <li key={idx}>{point}</li>)}
+        </ul>
+
+        <Typography sx={{color: '#4caf50',fontWeight:700}}>Matching</Typography>
+        <ul>
+          {matched.map((point,idx) =>  <li key={idx}>{point}</li>)}
+        </ul> */}
+          <Divider sx={{ mb: 2 }} />
+          {allPoints.length === 0 ? (
+            <Typography variant="body2" sx={{ color: '#444' }}>No review remarks available.</Typography>
+          ) : (
+          <>
+            <TableContainer sx={{ maxHeight: 500, overflowY: 'auto', background: "rgba(0, 0, 0, 0.5)" }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Remarks</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {allPoints.map(({ point, status }, idx) => (
+                    <TableRow key={idx}>
+                      
+                      <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{point}</TableCell>
+                      <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>AI</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+          )}
+      {/* </Box> */}
+      {/* </Box> */}
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: '60%', mt: 5, pl: 25, pr: 10, }}>
+        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#00D1FF', color: '#fff', }} onClick={handlePassAndGenerate} disabled={loading}>
           {loading ? 'Processing...' : 'Pass & Generate Finance Note'}
         </Button>
-        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1rem", p: 3, borderRadius: 4, background: '#fff', color: '#000',}} onClick={handleRejectAndGenerate} disabled={loading}> {loading ? 'Processing...' : 'Reject & Generate Return Note'}</Button>
-        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "1rem", p: 3, borderRadius: 4, background: '#fff', color: '#000', }} onClick={() => setShowReviewCheck(true)}>Review & Update Observatons</Button>
+        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#FF3B3F', color: '#fff',}} onClick={handleRejectAndGenerate} disabled={loading}> {loading ? 'Processing...' : 'Reject & Generate Return Note'}</Button>
+        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#6A5ACD', color: '#fff', }} onClick={() => setShowReviewCheck(true)}>Review & Update Observatons</Button>
       </Box>
     </Paper>
   );
