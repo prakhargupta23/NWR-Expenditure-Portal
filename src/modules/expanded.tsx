@@ -63,6 +63,15 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
 
+  // Helper to extract reviewer from point text
+  function extractReviewer(point: string): { text: string, reviewer: string } {
+    const match = point.match(/^(.*)\(([^)]+)\)\s*$/);
+    if (match) {
+      return { text: match[1].trim(), reviewer: match[2].trim() };
+    }
+    return { text: point, reviewer: '-' };
+  }
+
   if (showReviewCheck) {
   return (
       <Box sx={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'left', justifyContent: 'flex-start', pt: 2 }}>
@@ -266,14 +275,16 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {allPoints.map(({ point, status }, idx) => (
-                    <TableRow key={idx}>
-                      
-                      <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{point}</TableCell>
-                      <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
-                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>AI</TableCell>
-                    </TableRow>
-                  ))}
+                  {allPoints.map(({ point, status }, idx) => {
+                    const { text, reviewer } = extractReviewer(point);
+                    return (
+                      <TableRow key={idx}>
+                        <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
+                        <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
+                        <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewer}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox, Select, MenuItem } from '@mui/material';
 import { DocumentRow } from './expanded';
+import { expenditureService } from "../services/expenditure.service";
 
 interface ReviewCheckProps {
   row: DocumentRow;
@@ -43,13 +44,83 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
     ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
   const [selected, setSelected] = useState<boolean[]>(Array(allPoints.length).fill(false));
-  const [updateStatus, setUpdateStatus] = useState<string[]>(Array(allPoints.length).fill('Pending'));
+  const [updateStatus, setUpdateStatus] = useState<string[]>(Array(allPoints.length).fill(''));
+  const [localPoints, setLocalPoints] = useState(allPoints);
+  const [localMatched, setLocalMatched] = useState(matched);
+  const [localUnmatched, setLocalUnmatched] = useState(unmatched);
+  const [localReviewers, setLocalReviewers] = useState(allPoints.map(({ point }) => extractReviewer(point).reviewer));
+  const [loading, setLoading] = useState(false);
 
   const handleCheckbox = (idx: number) => {
     setSelected(prev => prev.map((v, i) => (i === idx ? !v : v)));
   };
   const handleDropdown = (idx: number, value: string) => {
     setUpdateStatus(prev => prev.map((v, i) => (i === idx ? value : v)));
+  };
+
+  // Helper to extract reviewer from point text
+  function extractReviewer(point: string): { text: string, reviewer: string } {
+    const match = point.match(/^(.*)\(([^)]+)\)\s*$/);
+    if (match) {
+      return { text: match[1].trim(), reviewer: match[2].trim() };
+    }
+    return { text: point, reviewer: '-' };
+  }
+
+  // Helper to rebuild remarks string
+  function buildRemarks(matchedArr: string[], unmatchedArr: string[]) {
+    let out = [];
+    if (unmatchedArr.length > 0) {
+      out.push('Unmatched Results');
+      out.push(...unmatchedArr.map(p => `• ${p}`));
+      out.push('');
+    }
+    if (matchedArr.length > 0) {
+      out.push('Matched Results');
+      out.push(...matchedArr.map(p => `• ${p}`));
+    }
+    return out.join('\n');
+  }
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    // Copy current points and reviewers
+    let newMatched: string[] = [...localMatched];
+    let newUnmatched: string[] = [...localUnmatched];
+    let newReviewers: string[] = [...localReviewers];
+    // For each point, if updateStatus is set, update reviewer and move point
+    localPoints.forEach(({ point, status }, idx) => {
+      const { text } = extractReviewer(point);
+      const sel = updateStatus[idx];
+      if (sel === 'Match' || sel === 'Mismatch') {
+        // Remove from both arrays if present
+        newMatched = newMatched.filter(p => extractReviewer(p).text !== text);
+        newUnmatched = newUnmatched.filter(p => extractReviewer(p).text !== text);
+        // Add to correct array with reviewer 'Manual'
+        const newPoint = `${text} (Manual)`;
+        if (sel === 'Match') newMatched.push(newPoint);
+        else newUnmatched.push(newPoint);
+        newReviewers[idx] = 'Manual';
+      }
+    });
+    // Rebuild remarks
+    const newRemark = buildRemarks(newMatched, newUnmatched);
+    // Update row and backend
+    const updatedRow = { ...row, Remark: newRemark };
+    await expenditureService.updateExpenditureData(updatedRow);
+    // Update local state
+    setLocalMatched(newMatched);
+    setLocalUnmatched(newUnmatched);
+    setLocalPoints([
+      ...newUnmatched.map(point => ({ point, status: 'Mismatch' as const })),
+      ...newMatched.map(point => ({ point, status: 'Match' as const })),
+    ]);
+    setLocalReviewers([
+      ...newUnmatched.map(() => 'Manual'),
+      ...newMatched.map(() => 'Manual'),
+    ]);
+    setUpdateStatus(Array(newMatched.length + newUnmatched.length).fill(''));
+    setLoading(false);
   };
 
   return (
@@ -75,47 +146,55 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
                   {/* <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Select</TableCell> */}
                   <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Subject</TableCell>
                   <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
+                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
                   <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Update Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {allPoints.map(({ point, status }, idx) => (
-                  <TableRow key={idx}>
-                    {/* <TableCell sx={{ textAlign: 'center', }}>
-                      <Checkbox sx = {{color: '#fff'}} checked={selected[idx]} onChange={() => handleCheckbox(idx)} />
-                    </TableCell> */}
-                    <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{point}</TableCell>
-                    <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Select
-                        value={updateStatus[idx]}
-                        onChange={e => handleDropdown(idx, e.target.value as string)}
-                        size="small"
-                        sx={{ minWidth: 120, background: '#fff', color: '#222', borderRadius: 1 }}
-                      >
-                        <MenuItem value="Pending">Pending</MenuItem>
-                        <MenuItem value="Resolved">Resolved</MenuItem>
-                        <MenuItem value="Escalated">Escalated</MenuItem>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {localPoints.map(({ point, status }, idx) => {
+                  const { text, reviewer } = extractReviewer(point);
+                  return (
+                    <TableRow key={idx}>
+                      <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
+                      <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{updateStatus[idx] ? 'Manual' : reviewer}</TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Select
+                          value={updateStatus[idx]}
+                          displayEmpty
+                          onChange={e => handleDropdown(idx, e.target.value as string)}
+                          size="small"
+                          sx={{ minWidth: 100, background: '#fff', color: '#222', borderRadius: 1 }}
+                        >
+                          <MenuItem value="">Select</MenuItem>
+                          <MenuItem value="Match">Match</MenuItem>
+                          <MenuItem value="Mismatch">Mismatch</MenuItem>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <button style={{
-              background: '#1976d2',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: '1rem',
-              padding: '12px 32px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.15)'
-            }}>
-              Update Observations
+            <button
+              style={{
+                background: '#1976d2',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '1rem',
+                padding: '12px 32px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.15)',
+                opacity: loading ? 0.7 : 1,
+              }}
+              disabled={loading}
+              onClick={handleUpdate}
+            >
+              {loading ? 'Updating...' : 'Update Observations'}
             </button>
           </Box>
         </>
