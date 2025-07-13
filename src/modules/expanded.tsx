@@ -63,13 +63,32 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
 
-  // Helper to extract reviewer from point text
-  function extractReviewer(point: string): { text: string, reviewer: string } {
-    const match = point.match(/^(.*)\(([^)]+)\)\s*$/);
+  // Helper to extract reviewer and review time from point text
+  function extractReviewer(point: string): { text: string, reviewer: string, reviewTime: string } {
+    // Pattern to match text followed by reviewer info in parentheses
+    console.log(point)
+    //const match = point.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    const match = point.match(/^(.*?)\s*\(([^()\s]+)\s*\(([^()]+)\)\)$/);
+    console.log("ghj",match)
     if (match) {
-      return { text: match[1].trim(), reviewer: match[2].trim() };
+      const remarkText = match[1].trim();
+      const reviewerPart = match[2].trim();
+      console.log(remarkText)
+      console.log(reviewerPart)
+      // Check if reviewer part contains date/time info like "AI (29/05/2025)"
+      const timeMatch = match[3].trim();
+      // const timeMatch = reviewerPart.match(/^(.+?)\s*\(([^)]+)\)$/);
+      // if (timeMatch) {
+      //   return { 
+      //     text: remarkText, 
+      //     reviewer: timeMatch[1].trim(), 
+      //     reviewTime: timeMatch[2].trim() 
+      //   };
+      // }
+      return { text: remarkText, reviewer: reviewerPart, reviewTime: timeMatch };
     }
-    return { text: point, reviewer: '-' };
+    console.log("dhcaskj")
+    return { text: point, reviewer: '-', reviewTime: '-' };
   }
 
   if (showReviewCheck) {
@@ -323,16 +342,18 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                     <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Remarks</TableCell>
                     <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
                     <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Time</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {allPoints.map(({ point, status }, idx) => {
-                    const { text, reviewer } = extractReviewer(point);
+                    const { text, reviewer, reviewTime } = extractReviewer(point);
                     return (
                       <TableRow key={idx}>
                         <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
                         <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
                         <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewer}</TableCell>
+                        <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewTime}</TableCell>
                       </TableRow>
                     );
                   })}

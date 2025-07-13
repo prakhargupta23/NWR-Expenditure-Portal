@@ -49,6 +49,7 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
   const [localMatched, setLocalMatched] = useState(matched);
   const [localUnmatched, setLocalUnmatched] = useState(unmatched);
   const [localReviewers, setLocalReviewers] = useState(allPoints.map(({ point }) => extractReviewer(point).reviewer));
+  const [localReviewTimes, setLocalReviewTimes] = useState(allPoints.map(({ point }) => extractReviewer(point).reviewTime));
   const [loading, setLoading] = useState(false);
 
   const handleCheckbox = (idx: number) => {
@@ -58,13 +59,32 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
     setUpdateStatus(prev => prev.map((v, i) => (i === idx ? value : v)));
   };
 
-  // Helper to extract reviewer from point text
-  function extractReviewer(point: string): { text: string, reviewer: string } {
-    const match = point.match(/^(.*)\(([^)]+)\)\s*$/);
+  // Helper to extract reviewer and review time from point text
+  function extractReviewer(point: string): { text: string, reviewer: string, reviewTime: string } {
+    console.log(point)
+    //const match = point.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    const match = point.match(/^(.*?)\s*\(([^()\s]+)\s*\(([^()]+)\)\)$/);
+    console.log("ghj",match)
     if (match) {
-      return { text: match[1].trim(), reviewer: match[2].trim() };
+      const remarkText = match[1].trim();
+      const reviewerPart = match[2].trim();
+      console.log(remarkText)
+      console.log(reviewerPart)
+      // Check if reviewer part contains date/time info like "AI (29/05/2025)"
+      // const timeMatch = reviewerPart.match(/^(.+?)\s*\(([^)]+)\)$/);
+      const timeMatch = match[3].trim();
+      console.log("time watch",timeMatch)
+      // if (timeMatch) {
+      //   return { 
+      //     text: remarkText, 
+      //     reviewer: timeMatch[1].trim(), 
+      //     reviewTime: timeMatch[2].trim() 
+      //   };
+      // }
+      return { text: remarkText, reviewer: reviewerPart, reviewTime: timeMatch };
     }
-    return { text: point, reviewer: '-' };
+    console.log("dhcaskj")
+    return { text: point, reviewer: '-', reviewTime: '-' };
   }
 
   // Helper to rebuild remarks string
@@ -88,6 +108,9 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
     let newMatched: string[] = [...localMatched];
     let newUnmatched: string[] = [...localUnmatched];
     let newReviewers: string[] = [...localReviewers];
+    let newReviewTimes: string[] = [...localReviewTimes];
+    const currentDateTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
     // For each point, if updateStatus is set, update reviewer and move point
     localPoints.forEach(({ point, status }, idx) => {
       const { text } = extractReviewer(point);
@@ -96,17 +119,19 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
         // Remove from both arrays if present
         newMatched = newMatched.filter(p => extractReviewer(p).text !== text);
         newUnmatched = newUnmatched.filter(p => extractReviewer(p).text !== text);
-        // Add to correct array with reviewer 'Manual'
-        const newPoint = `${text} (Manual)`;
+        // Add to correct array with reviewer 'Manual' and current date/time
+        const newPoint = `${text} (Manual (${currentDateTime}))`;
         if (sel === 'Match') newMatched.push(newPoint);
         else newUnmatched.push(newPoint);
         newReviewers[idx] = 'Manual';
+        newReviewTimes[idx] = currentDateTime;
       }
     });
     // Rebuild remarks
     const newRemark = buildRemarks(newMatched, newUnmatched);
     // Update row and backend
     const updatedRow = { ...row, Remark: newRemark };
+    console.log('remark',updatedRow)
     await expenditureService.updateExpenditureData(updatedRow);
     // Update local state
     setLocalMatched(newMatched);
@@ -118,6 +143,10 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
     setLocalReviewers([
       ...newUnmatched.map(() => 'Manual'),
       ...newMatched.map(() => 'Manual'),
+    ]);
+    setLocalReviewTimes([
+      ...newUnmatched.map(() => currentDateTime),
+      ...newMatched.map(() => currentDateTime),
     ]);
     setUpdateStatus(Array(newMatched.length + newUnmatched.length).fill(''));
     setLoading(false);
@@ -141,23 +170,25 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
         <>
           <TableContainer sx={{ maxHeight: 500, overflowY: 'auto', background: "rgba(0, 0, 0, 0.5)" }}>
             <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  {/* <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Select</TableCell> */}
-                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Subject</TableCell>
-                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
-                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
-                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Update Status</TableCell>
-                </TableRow>
-              </TableHead>
+                              <TableHead>
+                  <TableRow>
+                    {/* <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Select</TableCell> */}
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Subject</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Time</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Update Status</TableCell>
+                  </TableRow>
+                </TableHead>
               <TableBody>
                 {localPoints.map(({ point, status }, idx) => {
-                  const { text, reviewer } = extractReviewer(point);
+                  const { text, reviewer, reviewTime } = extractReviewer(point);
                   return (
                     <TableRow key={idx}>
                       <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
                       <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
                       <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{updateStatus[idx] ? 'Manual' : reviewer}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{updateStatus[idx] ? new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : reviewTime}</TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Select
                           value={updateStatus[idx]}
