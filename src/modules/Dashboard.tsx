@@ -32,11 +32,26 @@ function extractAmount(row: DocumentRow) {
   return parseFloat((row.TotalAmt || '').toString().replace(/,/g, '')) || 0;
 }
 
-// Helper to extract date from row (InvoiceDate: DD/MM/YYYY)
-function extractDate(row: DocumentRow) {
-  if (!row.InvoiceDate) return null;
-  const [day, month, year] = row.InvoiceDate.split('/').map(Number);
-  return new Date(year, month - 1, day);
+// Helper to extract date from Created field
+function extractCreatedDate(row: DocumentRow) {
+  if (!row.Created) return null;
+  try {
+    // Handle both string and Date formats
+    const dateStr = String(row.Created);
+    // If it's already a date string like 20250716819:16.248Z"
+    if (dateStr.includes('T')) return new Date(dateStr);
+    
+    // If it's in DD/MM/YYYY format
+    if(dateStr.includes('/')) {
+      const [datePart] = dateStr.split(',');
+      const [day, month, year] = datePart.split('/').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date(dateStr);
+  } catch (error) {
+    console.error('Error parsing Created date:', error, row.Created);
+    return null;
+  }
 }
 
 // Get start of week (Sunday)
@@ -235,7 +250,17 @@ export default function Dashboard() {
       data.forEach((row: DocumentRow) => {
         const status = extractStatus(row);
         const amt = extractAmount(row);
-        const date = extractDate(row);
+        const date = extractCreatedDate(row); // Use Created date instead of InvoiceDate
+        
+        console.log('Processing row:', row);
+        console.log(
+          'IREPSNo:', row.IREPSNo, 
+          status, 
+          amt, 
+          'date:', date?.toISOString(),
+          'created:', row.Created 
+        );
+        
         // Status counts
         if (status === "approved") {
           approved++;
@@ -246,20 +271,24 @@ export default function Dashboard() {
         } else if (status === "pending") {
           pending++;
         }
+        
         // Weekly data (current week)
         if (date) {
           const weekStart = new Date(startOfWeek);
           const weekEnd = new Date(startOfWeek);
           weekEnd.setDate(weekStart.getDate() + 6);
+          
           if (date >= weekStart && date <= weekEnd) {
             const dayIdx = date.getDay();
             if (dayIdx >= 0 && dayIdx < weekData.length) {
               weekData[dayIdx].uv += 1; // All uploads
               if (status !== "pending") weekData[dayIdx].pv += 1; // Reviews (not pending)
               weekData[dayIdx].amt = weekData[dayIdx].uv + weekData[dayIdx].pv;
+              console.log(`Added to week day ${dayIdx} (${days[dayIdx]}):`, { uv: weekData[dayIdx].uv, pv: weekData[dayIdx].pv });
             }
           }
         }
+        
         // Monthly data (current year)
         if (date && date.getFullYear() === currentYear) {
           const monthIdx = date.getMonth();
@@ -267,9 +296,17 @@ export default function Dashboard() {
             monthlyData[monthIdx].documents += 1;
             if (status !== "pending") monthlyData[monthIdx].reviews += 1;
             if (status === "approved") monthlyData[monthIdx].approvals += 1;
+            console.log(`Added to month ${monthIdx} (${months[monthIdx]}):`, { 
+              documents: monthlyData[monthIdx].documents, 
+              reviews: monthlyData[monthIdx].reviews, 
+              approvals: monthlyData[monthIdx].approvals 
+            });
           }
         }
       });
+      
+      console.log('Final weekly data:', weekData);
+      console.log('Final monthly data:', monthlyData);
       setStatusCounts([
         { name: "Approved", count: approved },
         { name: "Rejected", count: rejected },
@@ -461,7 +498,7 @@ export default function Dashboard() {
                     <ResponsiveContainer width={200} height={200}>
                       <PieChart>
                         <Pie
-                          data={statusCounts}
+                          data={statusCounts.filter(s => s.name === "Approved" || s.name === "Rejected")}
                           dataKey="count"
                           nameKey="name"
                           cx="50%"
@@ -469,7 +506,7 @@ export default function Dashboard() {
                           outerRadius={70}
                           label={false}
                         >
-                          {statusCounts.map((entry, index) => (
+                          {statusCounts.filter(s => s.name === "Approved" || s.name === "Rejected").map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={
                               entry.name === "Approved" ? "#4caf50" :
                               entry.name === "Rejected" ? "#f44336" :
