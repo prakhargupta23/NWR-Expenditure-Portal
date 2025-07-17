@@ -3,6 +3,7 @@ import { Box, Typography, Button, Divider, Grid, Paper, Table, TableBody, TableC
 import CloseIcon from '@mui/icons-material/Close';
 import ReviewCheck from './ReviewCheck';
 import { expenditureService } from "../services/expenditure.service";
+import { jsPDF } from "jspdf";
 
 export interface DocumentRow {
   SNo: number;
@@ -63,32 +64,38 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
 
-  // Helper to extract reviewer and review time from point text
-  function extractReviewer(point: string): { text: string, reviewer: string, reviewTime: string } {
-    // Pattern to match text followed by reviewer info in parentheses
-    console.log(point)
-    //const match = point.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
-    const match = point.match(/^(.*?)\s*\(([^()\s]+)\s*\(([^()]+)\)\)$/);
-    console.log("ghj",match)
+  // Helper to extract reviewer, review time, and review remark from point text
+  function extractReviewer(point: string): { text: string, reviewer: string, reviewTime: string, reviewRemark: string } {
+    // Match pattern: ... (REVIEWEDBY (REVIEWTIME)(REMARK)) at the end
+    // const match = point.match(/^(.*)\(([^()]*)\s*\(([^()]*)\)\(([^()]*)\)\(([^()]*)\)\)\)$/);
+    const match = point.match(/^(.*)\(([^()]+)\s*\(([^()]*)\)\s*\(([^()]*)\)\s*\(([^()]*)\)\)$/);
+    console.log("daasdfghj",match)
     if (match) {
-      const remarkText = match[1].trim();
-      const reviewerPart = match[2].trim();
-      console.log(remarkText)
-      console.log(reviewerPart)
-      // Check if reviewer part contains date/time info like "AI (29/05/2025)"
-      const timeMatch = match[3].trim();
-      // const timeMatch = reviewerPart.match(/^(.+?)\s*\(([^)]+)\)$/);
-      // if (timeMatch) {
-      //   return { 
-      //     text: remarkText, 
-      //     reviewer: timeMatch[1].trim(), 
-      //     reviewTime: timeMatch[2].trim() 
-      //   };
-      // }
-      return { text: remarkText, reviewer: reviewerPart, reviewTime: timeMatch };
+      const [fulltext, fullMatch, aiText, firstVal, secondVal, thirdVal] = match;
+      // return {
+      //   text: match[1].trim(),
+      //   reviewer: match[3].trim(),
+      //   reviewTime: match[4].trim(),
+      //   reviewRemark: match[5].trim(),
+      // };
+      return {
+        text: fullMatch,
+        reviewer: aiText,
+        reviewTime:firstVal,
+        reviewRemark:secondVal
+      }
     }
-    console.log("dhcaskj")
-    return { text: point, reviewer: '-', reviewTime: '-' };
+    // Fallback: try to extract at least the reviewer
+    const fallback = point.match(/^(.*)\(([^)]+)\)\s*$/);
+    if (fallback) {
+      return {
+        text: fallback[1].trim(),
+        reviewer: fallback[2].trim(),
+        reviewTime: '-',
+        reviewRemark: '-',
+      };
+    }
+    return { text: point, reviewer: '-', reviewTime: '-', reviewRemark: '-' };
   }
 
   if (showReviewCheck) {
@@ -107,15 +114,89 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   const handlePassAndGenerate = async () => {
     setLoading(true);
     try {
-      const updatedRow: DocumentRow = {
-        ...row,
-        Status: 'approved',
-        VerificationTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      };
-      await expenditureService.updateExpenditureData(updatedRow);
-      onClose();
+      // Fetch all GST invoice data
+      const gstDataFetched = await expenditureService.getGstInvoiceData();
+      const gstDataArray = gstDataFetched.data;
+      // Find the GST data object matching the current row's SNo
+      const matchedGstData = gstDataArray.find((item: any) => String(item.SNo) === String(row.SNo));
+      const doc = new jsPDF();
+      const leftPad = 20;
+      const rightPad = 190;
+      let y = 25;
+      // Heading
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Approval Note', leftPad, y);
+      y += 14;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subject: Approval for Payment Processing', leftPad, y);
+      y += 16;
+      // Table header with shaded background
+      doc.setFillColor(230, 230, 250);
+      doc.rect(leftPad, y - 7, rightPad - leftPad, 10, 'F');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Sr. No.', leftPad + 2, y);
+      doc.text('Details', leftPad + 28, y);
+      doc.text('Remarks', leftPad + 95, y);
+      y += 7;
+      doc.setLineWidth(0.5);
+      doc.line(leftPad, y, rightPad, y);
+      y += 4;
+      // Table rows
+      const tableRows = [
+        { no: '1.', detail: 'Purchase Order (P.O.) Number', key: 'PONo' },
+        { no: '2.', detail: 'Consignee', key: 'Consignee' },
+        { no: '3.', detail: 'Bill Passed Vide CO6 No.', key: '' },
+        { no: '4.', detail: 'Invoice Number & Date', key: '' },
+        { no: '5.', detail: 'Receipt Note Number', key: 'RNoteNo' },
+        { no: '6.', detail: 'Material Received On', key: '' },
+        { no: '7.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
+        { no: '8.', detail: 'Liquidated Damages (L.D) ', key: '' },
+        { no: '9.', detail: 'Security Deposit (S.D) ', key: 'Security' },
+        { no: '10.', detail: 'Other Deductions (if any) ', key: '' },
+        { no: '11.', detail: 'Net Payment Recommended ', key: 'TotalAmt' },
+      ];
+      doc.setFont('helvetica', 'normal');
+      tableRows.forEach((row, idx) => {
+        let remarks = '';
+        if (row.key && matchedGstData && matchedGstData[row.key] != null) {
+          if (row.detail === 'Invoice Number & Date') {
+            remarks = `${matchedGstData['InvoiceNo'] || ''} ${matchedGstData['InvoiceDate'] || ''}`.trim();
+          } else {
+            remarks = String(matchedGstData[row.key]);
+          }
+        } else if (row.detail === 'Invoice Number & Date' && matchedGstData) {
+          remarks = `${matchedGstData['InvoiceNo'] || ''} ${matchedGstData['InvoiceDate'] || ''}`.trim();
+        }
+        doc.text(row.no, leftPad + 2, y);
+        doc.text(row.detail, leftPad + 28, y);
+        doc.setTextColor(80, 80, 80);
+        doc.text(remarks, leftPad + 95, y);
+        doc.setTextColor(0, 0, 0);
+        y += 9;
+        if (y > 265) { doc.addPage(); y = 25; }
+      });
+      y += 4;
+      doc.setLineWidth(0.2);
+      doc.setDrawColor(180, 180, 180);
+      doc.line(leftPad, y, rightPad, y);
+      y += 14;
+      // Conclusion section with highlight
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(0, 51, 102);
+      doc.text('Conclusion:', leftPad, y);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      doc.text('The above details have been checked and verified as per agreement terms and internal guidelines. Recommended for payment.', leftPad, y, { maxWidth: rightPad - leftPad });
+      doc.setTextColor(0, 0, 0);
+      doc.save(`Finance_Note_SNo_${row.SNo}.pdf`);
     } catch (error) {
-      console.error('Error approving document:', error);
+      console.error('Error generating PDF:', error);
     } finally {
       setLoading(false);
     }
@@ -124,15 +205,81 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   const handleRejectAndGenerate = async () => {
     setLoading(true);
     try {
-      const updatedRow: DocumentRow = {
-        ...row,
-        Status: 'rejected',
-        VerificationTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      };
-      await expenditureService.updateExpenditureData(updatedRow);
-      onClose();
+      // Fetch all GST invoice data
+      const gstDataFetched = await expenditureService.getGstInvoiceData();
+      const gstDataArray = gstDataFetched.data;
+      // Find the GST data object matching the current row's SNo
+      const matchedGstData = gstDataArray.find((item: any) => String(item.SNo) === String(row.SNo));
+      let unmatchedResults: string[] = [];
+      if (matchedGstData && matchedGstData.Remarks) {
+        try {
+          const remarksObj = JSON.parse(matchedGstData.Remarks);
+          if (Array.isArray(remarksObj.UnmatchedResults)) {
+            unmatchedResults = remarksObj.UnmatchedResults;
+          }
+        } catch (e) {
+          // If parsing fails, leave unmatchedResults empty
+        }
+      }
+      const doc = new jsPDF();
+      const leftPad = 20;
+      let y = 25;
+      // Heading with shaded background
+      doc.setFillColor(255, 255, 255);
+      doc.rect(leftPad - 8, y - 12, 170, 14, 'F');
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 51, 153);
+      doc.text('Return / Rejection Note', leftPad, y);
+      y += 10;
+      doc.setDrawColor(0, 51, 153);
+      doc.setLineWidth(1);
+      doc.line(leftPad - 8, y, leftPad + 162, y);
+      y += 8;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Subject: Return of Bill / Invoice for Compliance', leftPad, y);
+      y += 12;
+      doc.setFontSize(12);
+      doc.text('The following observations need to be addressed before the bill can be processed:', leftPad, y);
+      y += 8;
+      // Bullet points section with subtle background
+      doc.setFillColor(245, 245, 245);
+      doc.rect(leftPad - 4, y - 2, 165, 8 * Math.max(1, unmatchedResults.length), 'F');
+      const lineHeight = 6;
+      if (unmatchedResults.length > 0) {
+        unmatchedResults.forEach((point, idx) => {
+          const { text } = extractReviewer(point);
+          const lines = doc.splitTextToSize(`${idx + 1}. ${text}`, 160);
+          lines.forEach((line: string) => {
+            if (y > 270) { doc.addPage(); y = 25; }
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(11);
+            doc.text(line, leftPad, y);
+            y += lineHeight;
+          });
+        });
+      } else {
+        doc.text('No specific remarks found.', leftPad, y);
+        y += 8;
+      }
+      y += 6;
+      // Action Required section with highlight
+      doc.setFillColor(255, 255, 255);
+      doc.rect(leftPad - 4, y - 2, 165, 14, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(0, 51, 153);
+      doc.text('Action Required:', leftPad, y + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      y += 12;
+      doc.text('Please rectify the above points and resubmit for bill passing.', leftPad, y);
+      doc.save(`Return_Note_SNo_${row.SNo}.pdf`);
     } catch (error) {
-      console.error('Error approving document:', error);
+      console.error('Error generating PDF:', error);
     } finally {
       setLoading(false);
     }
@@ -343,18 +490,20 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                     <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
                     <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
                     <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Time</TableCell>
+                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Remark</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {allPoints.map(({ point, status }, idx) => {
-                    const { text, reviewer, reviewTime } = extractReviewer(point);
+                    const { text, reviewer, reviewTime, reviewRemark } = extractReviewer(point);
                     return (
-                      <TableRow key={idx}>
+                    <TableRow key={idx}>
                         <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
-                        <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
+                      <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
                         <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewer}</TableCell>
                         <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewTime}</TableCell>
-                      </TableRow>
+                        <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewRemark}</TableCell>
+                    </TableRow>
                     );
                   })}
                 </TableBody>

@@ -6,76 +6,46 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PieChartIcon from '@mui/icons-material/PieChart';
-import SettingsIcon from '@mui/icons-material/Settings';
+// import SettingsIcon from '@mui/icons-material/Settings';
 import PersonIcon from '@mui/icons-material/Person';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Line, Legend, LineChart, CartesianGrid
 } from "recharts";
 import { expenditureService } from "../services/expenditure.service";
-import { takeUntil } from "rxjs";
+// import { takeUntil } from "rxjs";
 
-// Function to generate current week data from backend
-function getCurrentWeekDataFromBackend(rows: DocumentRow[]): Array<{ name: string; uv: number; pv: number; amt: number }> {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date();
-  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  
-  // Calculate the start of the current week (Sunday)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - currentDay);
-  
-  // Initialize data structure for the week
-  const weekData = days.map((day, index) => {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + index);
-    
-    return {
-      name: day,
-      uv: 0, // Uploads/New documents
-      pv: 0, // Views/Verifications
-      amt: 0
-    };
-  });
-  
-  // Process backend data to count documents by day
-  rows.forEach((row: DocumentRow) => {
-    if (!row.VerificationTime) return;
-    
+// Helper to extract status from row (Status or Remarks.Status)
+function extractStatus(row: DocumentRow) {
+  let status = row.Status;
+  if (row.Remarks) {
     try {
-      const [datePart] = row.VerificationTime.split(','); // "10/07/2025"
-      const [day, month, year] = datePart.split('/').map(Number);
-      const documentDate = new Date(year, month - 1, day); // JS months are 0-indexed
-      
-      // Check if this document is from the current week
-      const weekStart = new Date(startOfWeek);
-      const weekEnd = new Date(startOfWeek);
-      weekEnd.setDate(startOfWeek.getDate() + 6);
-      
-      if (documentDate >= weekStart && documentDate <= weekEnd) {
-        const dayOfWeek = documentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        const dayIndex = dayOfWeek;
-        
-        if (dayIndex >= 0 && dayIndex < weekData.length) {
-          // Count as upload (new document)
-          weekData[dayIndex].uv += 1;
-          
-          // If document has a status, count as verification/view
-          if (row.Status) {
-            weekData[dayIndex].pv += 1;
-          }
-          
-          weekData[dayIndex].amt = weekData[dayIndex].uv + weekData[dayIndex].pv;
-        }
-      }
-    } catch (error) {
-      console.error('Error processing document date:', error);
-    }
-  });
-  
-  return weekData;
+      const remarksObj = JSON.parse(row.Remarks);
+      if (remarksObj.Status) status = remarksObj.Status;
+    } catch {}
+  }
+  return (status || '').toLowerCase();
 }
 
+// Helper to extract amount from row
+function extractAmount(row: DocumentRow) {
+  return parseFloat((row.TotalAmt || '').toString().replace(/,/g, '')) || 0;
+}
+
+// Helper to extract date from row (InvoiceDate: DD/MM/YYYY)
+function extractDate(row: DocumentRow) {
+  if (!row.InvoiceDate) return null;
+  const [day, month, year] = row.InvoiceDate.split('/').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// Get start of week (Sunday)
+function getStartOfWeek(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
 
 
 const pieData = [
@@ -104,13 +74,13 @@ function getMonthlyDataFromBackend(rows: DocumentRow[]): Array<{ name: string; d
     reviews: 0,
     approvals: 0
   }));
-  
+  console.log('yeardata',rows,monthlyData)
   // Process backend data to count documents by month
   rows.forEach((row: DocumentRow) => {
-    if (!row.VerificationTime) return;
+    if (!row.Created) return;
     
     try {
-      const [datePart] = row.VerificationTime.split(','); // "10/07/2025"
+      const [datePart] = String(row.Created).split(','); // "10/07/2025"
       const [day, month, year] = datePart.split('/').map(Number);
       const documentDate = new Date(year, month - 1, day); // JS months are 0-indexed
       
@@ -151,17 +121,19 @@ const stackedBarData = [
 ];
 
 interface DocumentRow {
-  SNo: number;
-  ReceiptNote: string | null;
-  TaxInvoice: string | null;
-  GSTInvoice: string | null;
-  ModificationAdvice: string | null;
-  InspectionCertificate: string | null;
-  PurchaseOrder: string | null;
-  Status: string;
-  VerificationTime: string;
-  AuthorizationCommittee: string;
-  Remark: string;
+  SNo: number | string;           // BIGINT in DB, may come as string from backend
+  Status?: string | null;
+  PONo?: string | null;
+  Consignee?: string | null;
+  InvoiceNo?: string | null;
+  InvoiceDate?: string | null;
+  RNoteNo?: string | null;
+  QtyAccepted?: string | null;
+  TotalAmt?: string | null;
+  Security?: string | null;
+  Remarks?: string | null;
+  Created?: string | Date | null;
+  IREPSNo?: string | null; // Added IREPSNo
 }
 
 function getRowsFromCurrentMonth(rows: DocumentRow[]): DocumentRow[] {
@@ -172,9 +144,9 @@ function getRowsFromCurrentMonth(rows: DocumentRow[]): DocumentRow[] {
   console.log("oafkldnvsc")
   const data = rows.filter((row: DocumentRow) => {
     
-    if (!row.VerificationTime) return false;
+    if (!row.Created) return false;
     console.log("oafkldnvsc6432879")
-    const [datePart] = row.VerificationTime.split(','); // "10/07/2025"
+    const [datePart] = String(row.Created).split(','); // "10/07/2025"
     const [day, month, year] = datePart.split('/').map(Number);
     const date = new Date(year, month - 1, day); // JS months are 0-indexed
 
@@ -194,9 +166,10 @@ export default function Dashboard() {
   const [statusCounts, setStatusCounts] = useState([
     { name: "Approved", count: 0 },
     { name: "Rejected", count: 0 },
+    { name: "Pending", count: 0 },
     { name: "Total", count: 0 }
   ]);
-  const [chartData, setChartData] = useState<Array<{ name: string; uv: number; pv: number; amt: number }>>([
+  const [chartData, setChartData] = useState([
     { name: "Sun", uv: 0, pv: 0, amt: 0 },
     { name: "Mon", uv: 0, pv: 0, amt: 0 },
     { name: "Tue", uv: 0, pv: 0, amt: 0 },
@@ -205,7 +178,7 @@ export default function Dashboard() {
     { name: "Fri", uv: 0, pv: 0, amt: 0 },
     { name: "Sat", uv: 0, pv: 0, amt: 0 },
   ]);
-  const [lineData, setLineData] = useState<Array<{ name: string; documents: number; reviews: number; approvals: number }>>([
+  const [lineData, setLineData] = useState([
     { name: 'Jan', documents: 0, reviews: 0, approvals: 0 },
     { name: 'Feb', documents: 0, reviews: 0, approvals: 0 },
     { name: 'Mar', documents: 0, reviews: 0, approvals: 0 },
@@ -219,107 +192,106 @@ export default function Dashboard() {
     { name: 'Nov', documents: 0, reviews: 0, approvals: 0 },
     { name: 'Dec', documents: 0, reviews: 0, approvals: 0 },
   ]);
-  const [pieData2, setPieData2] = useState<Array<{ name: string; value: number }>>([
+  const [pieData2, setPieData2] = useState([
     { name: "Approved Amount", value: 0 },
     { name: "Rejected Amount", value: 0 },
   ]);
   const [loading, setLoading] = useState(true);
 
-
-  async function fetchStatusCounts() {
+  async function fetchDashboardData() {
     setLoading(true);
     try {
-      const res = await expenditureService.getExpenditureData();
-      
-      
-      // If backend returns { data: [...] }
-      const rows: DocumentRow[] = res.data || [];
-      const monthdata = getRowsFromCurrentMonth(rows);
-      console.log("monthdata",monthdata)
-      
-      // Generate weekly chart data from backend
-      const weeklyData = getCurrentWeekDataFromBackend(rows);
-      setChartData(weeklyData);
-      console.log("Weekly chart data:", weeklyData);
-      
-      // Generate monthly chart data from backend
-      const monthlyData = getMonthlyDataFromBackend(rows);
-      setLineData(monthlyData);
-      console.log("Monthly chart data:", monthlyData);
-      
-      const uniqueCommittees = [...new Set(monthdata.filter(r => r.AuthorizationCommittee).map(r => r.AuthorizationCommittee))];
-
-      const filtered = uniqueCommittees.map(committee => {
-        const group = rows.filter(r => r.AuthorizationCommittee === committee);
-
-        const approved = group.find(r => r.Status === "Approved");
-        if (approved) return approved;
-
-        const rejected = group.find(r => r.Status === "Rejected");
-        return rejected || group[0]; // fallback in case neither Approved nor Rejected
+      const res = await expenditureService.getGstInvoiceData();
+      let data = res.data || [];
+      // Remove rows with IREPSNo null
+      data = data.filter((row: DocumentRow) => row.IREPSNo != null);
+      // Filter to unique IREPSNo (first occurrence)
+      const seen = new Set();
+      data = data.filter((row: DocumentRow) => {
+        console.log("ireps",row.IREPSNo)
+        if (seen.has(row.IREPSNo)) return false;
+        seen.add(row.IREPSNo);
+        console.log("new added")
+        return true;
       });
+      console.log("unique data",data,seen)
+      // Status counts
+      let approved = 0, rejected = 0, pending = 0;
+      let approvedAmount = 0, rejectedAmount = 0;
+      // Weekly data
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const today = new Date();
+      const startOfWeek = getStartOfWeek(today);
+      const weekData = days.map((day, i) => ({ name: day, uv: 0, pv: 0, amt: 0 }));
+      console.log("week data",weekData)
+      // Monthly data
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      const currentYear = today.getFullYear();
+      const monthlyData = months.map((month, i) => ({ name: month, documents: 0, reviews: 0, approvals: 0 }));
 
-      console.log("dashboard rws",uniqueCommittees)
-      console.log("unique",filtered)
-      const approved = filtered.filter(r => r.Status === "approved").length;
-      const rejected = filtered.filter(r => r.Status === "rejected").length;
-      const total = approved + rejected;
+      data.forEach((row: DocumentRow) => {
+        const status = extractStatus(row);
+        const amt = extractAmount(row);
+        const date = extractDate(row);
+        // Status counts
+        if (status === "approved") {
+          approved++;
+          approvedAmount += amt;
+        } else if (status === "rejected") {
+          rejected++;
+          rejectedAmount += amt;
+        } else if (status === "pending") {
+          pending++;
+        }
+        // Weekly data (current week)
+        if (date) {
+          const weekStart = new Date(startOfWeek);
+          const weekEnd = new Date(startOfWeek);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          if (date >= weekStart && date <= weekEnd) {
+            const dayIdx = date.getDay();
+            if (dayIdx >= 0 && dayIdx < weekData.length) {
+              weekData[dayIdx].uv += 1; // All uploads
+              if (status !== "pending") weekData[dayIdx].pv += 1; // Reviews (not pending)
+              weekData[dayIdx].amt = weekData[dayIdx].uv + weekData[dayIdx].pv;
+            }
+          }
+        }
+        // Monthly data (current year)
+        if (date && date.getFullYear() === currentYear) {
+          const monthIdx = date.getMonth();
+          if (monthIdx >= 0 && monthIdx < monthlyData.length) {
+            monthlyData[monthIdx].documents += 1;
+            if (status !== "pending") monthlyData[monthIdx].reviews += 1;
+            if (status === "approved") monthlyData[monthIdx].approvals += 1;
+          }
+        }
+      });
       setStatusCounts([
         { name: "Approved", count: approved },
         { name: "Rejected", count: rejected },
-        { name: "Total", count: total }
+        { name: "Pending", count: pending },
+        { name: "Total", count: data.length }
       ]);
-
-      // Filter SNo and Status for GST invoice calculation
-      const filteredSNoStatus = filtered.map(row => ({
-        SNo: row.SNo,
-        Status: row.Status
-      }));
-
-      // Fetch GST invoice data
-      try {
-        const gstInvoiceRes = await expenditureService.getGstInvoiceData();
-        const gstInvoiceData = gstInvoiceRes.data || [];
-        
-        // Calculate approved and rejected amounts
-        let approvedAmount = 0;
-        let rejectedAmount = 0;
-        
-        gstInvoiceData.forEach((gstRow: any) => {
-          const matchingRow = filteredSNoStatus.find(row => row.SNo === gstRow.SNo);
-          if (matchingRow && gstRow.InvoiceAmount) {
-            const amount = parseFloat(gstRow.InvoiceAmount) || 0;
-            if (matchingRow.Status.toLowerCase() === 'approved') {
-              approvedAmount += amount;
-              console.log("approved amt adding",amount)
-            } else if (matchingRow.Status.toLowerCase() === 'rejected') {
-              rejectedAmount += amount;
-              console.log("rejected amt adding",amount)
-            }
-          }
-        });
-        
-        
-        const newPieData = [
-          { name: "Approved Amount", value: approvedAmount },
-          { name: "Rejected Amount", value: rejectedAmount },
-        ];
-        
-        setPieData2(newPieData);
-        console.log("Pie chart data:", newPieData);
-        console.log("Pie chart data:", { approvedAmount, rejectedAmount });
-      } catch (gstError) {
-        console.error('Error fetching GST invoice data:', gstError);
-        setPieData2([
-          { name: "Approved Amount", value: 0 },
-          { name: "Rejected Amount", value: 0 },
-        ]);
-      }
+      setPieData2([
+        { name: "Approved Amount", value: approvedAmount },
+        { name: "Rejected Amount", value: rejectedAmount },
+      ]);
+      setChartData(weekData);
+      setLineData(monthlyData);
     } catch (e) {
       setStatusCounts([
         { name: "Approved", count: 0 },
         { name: "Rejected", count: 0 },
+        { name: "Pending", count: 0 },
         { name: "Total", count: 0 }
+      ]);
+      setPieData2([
+        { name: "Approved Amount", value: 0 },
+        { name: "Rejected Amount", value: 0 },
       ]);
       setChartData([
         { name: "Sun", uv: 0, pv: 0, amt: 0 },
@@ -344,16 +316,12 @@ export default function Dashboard() {
         { name: 'Nov', documents: 0, reviews: 0, approvals: 0 },
         { name: 'Dec', documents: 0, reviews: 0, approvals: 0 },
       ]);
-      setPieData2([
-        { name: "Approved Amount", value: 0 },
-        { name: "Rejected Amount", value: 0 },
-      ]);
     }
     setLoading(false);
   }
 
   useEffect(() => {
-    fetchStatusCounts();
+    fetchDashboardData();
   }, []);
 
   return (
