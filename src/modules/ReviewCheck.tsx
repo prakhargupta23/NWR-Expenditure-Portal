@@ -64,7 +64,7 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
   function extractReviewer(point: string): { text: string, reviewer: string, reviewTime: string, reviewRemark: string } {
     // Match pattern: ... (REVIEWEDBY (REVIEWTIME)(REMARK)) at the end
     const match = point.match(/^(.*)\(([^()]*)\s*\(([^()]*)\)\(([^()]*)\)\(([^()]*)\)\)$/);
-    console.log("ggggggg",match)
+    
     if (match) {
       return {
         text: match[1].trim(),
@@ -124,10 +124,25 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
     });
     // Rebuild remarks
     const newRemark = buildRemarks(newMatched, newUnmatched);
-    // Update row and backend
-    const updatedRow = { ...row, Remark: newRemark };
+    const newStatus = newUnmatched.length === 0 ? "approved" : "rejected";
+    const updatedRow = { ...row, Remark: newRemark, Status: newStatus };
     console.log("updating dbbbb",updatedRow);
     await expenditureService.updateExpenditureData(updatedRow);
+    // Update GST invoice data for the same SNo
+    try {
+      const gstDataFetched = await expenditureService.getGstInvoiceData();
+      const gstDataArray = gstDataFetched.data || gstDataFetched;
+      const matchedGstData = gstDataArray.find((item: any) => String(item.SNo) === String(updatedRow.SNo));
+      if (matchedGstData) {
+        matchedGstData.Status = updatedRow.Status;
+        matchedGstData.Remarks = updatedRow.Remark;
+        console.log("dashboard report row udate",matchedGstData)
+        await expenditureService.updateGstInvoiceData(matchedGstData);
+      }
+    } catch (err) {
+      console.error('Error updating GST invoice data:', err);
+    }
+    
     // Update local state
     setLocalMatched(newMatched);
     setLocalUnmatched(newUnmatched);

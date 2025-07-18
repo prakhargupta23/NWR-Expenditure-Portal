@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Button, Divider, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Box, Typography, Button, Divider, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import ReviewCheck from './ReviewCheck';
 import { expenditureService } from "../services/expenditure.service";
@@ -64,12 +64,38 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
 
+  const [openFinanceModal, setOpenFinanceModal] = useState(false);
+  const [financeInputs, setFinanceInputs] = useState({
+    co6No: '',
+    ld: '',
+    otherDeductions: '',
+    netPayment: ''
+  });
+
+  const returnReasons = [
+    "Manufacturer’s Authorization (MA) required for Delivery Period extension — please attach.",
+    "Invoice details not reflected in GSTR-2A for Invoice No.",
+    "Copy of Tax Invoice / IC not attached.",
+    "Invoice Number mismatch between bill and supporting documents.",
+    "Refund undertaking not attached.",
+    "Passing a duplicate invoice for the same supplier in the same financial year is not permissible. Invoice already passed against CO6 Number."
+  ];
+
+  const [openReturnModal, setOpenReturnModal] = useState(false);
+  const [returnInputs, setReturnInputs] = useState(
+    returnReasons.map(reason => ({ reason, remark: '' }))
+  );
+
+  const handleReturnRemarkChange = (idx: number, value: string) => {
+    setReturnInputs(prev => prev.map((item, i) => i === idx ? { ...item, remark: value } : item));
+  };
+
   // Helper to extract reviewer, review time, and review remark from point text
   function extractReviewer(point: string): { text: string, reviewer: string, reviewTime: string, reviewRemark: string } {
     // Match pattern: ... (REVIEWEDBY (REVIEWTIME)(REMARK)) at the end
-    // const match = point.match(/^(.*)\(([^()]*)\s*\(([^()]*)\)\(([^()]*)\)\(([^()]*)\)\)\)$/);
+    // const match = point.match(/^(.*)\(([^()]*)\s*\(([^()]*)\)\(([^()]*)\)\(([^()]*)\)\)$/);
     const match = point.match(/^(.*)\(([^()]+)\s*\(([^()]*)\)\s*\(([^()]*)\)\s*\(([^()]*)\)\)$/);
-    console.log("daasdfghj",match)
+    // console.log("daasdfghj",match)
     if (match) {
       const [fulltext, fullMatch, aiText, firstVal, secondVal, thirdVal] = match;
       // return {
@@ -111,7 +137,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     );
   }
 
-  const handlePassAndGenerate = async () => {
+  const handlePassAndGenerate = async (inputs?: any) => {
     setLoading(true);
     try {
       // Fetch all GST invoice data
@@ -148,30 +174,32 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       const tableRows = [
         { no: '1.', detail: 'Purchase Order (P.O.) Number', key: 'PONo' },
         { no: '2.', detail: 'Consignee', key: 'Consignee' },
-        { no: '3.', detail: 'Bill Passed Vide CO6 No.', key: '' },
+        { no: '3.', detail: 'Bill Passed Vide CO6 No.', value: inputs?.co6No || '' },
         { no: '4.', detail: 'Invoice Number & Date', key: '' },
         { no: '5.', detail: 'Receipt Note Number', key: 'RNoteNo' },
         { no: '6.', detail: 'Material Received On', key: '' },
         { no: '7.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
-        { no: '8.', detail: 'Liquidated Damages (L.D) ', key: '' },
-        { no: '9.', detail: 'Security Deposit (S.D) ', key: 'Security' },
-        { no: '10.', detail: 'Other Deductions (if any) ', key: '' },
-        { no: '11.', detail: 'Net Payment Recommended ', key: 'TotalAmt' },
+        { no: '8.', detail: 'Liquidated Damages (L.D)', value: inputs?.ld || '' },
+        { no: '9.', detail: 'Security Deposit (S.D)', key: 'Security' },
+        { no: '10.', detail: 'Other Deductions (if any)', value: inputs?.otherDeductions || '' },
+        { no: '11.', detail: 'Net Payment Recommended', value: inputs?.netPayment || '' },
       ];
       doc.setFont('helvetica', 'normal');
-      tableRows.forEach((row, idx) => {
+      tableRows.forEach((rowItem, idx) => {
         let remarks = '';
-        if (row.key && matchedGstData && matchedGstData[row.key] != null) {
-          if (row.detail === 'Invoice Number & Date') {
+        if (rowItem.value !== undefined) {
+          remarks = rowItem.value;
+        } else if (rowItem.key && matchedGstData && matchedGstData[rowItem.key] != null) {
+          if (rowItem.detail === 'Invoice Number & Date') {
             remarks = `${matchedGstData['InvoiceNo'] || ''} ${matchedGstData['InvoiceDate'] || ''}`.trim();
           } else {
-            remarks = String(matchedGstData[row.key]);
+            remarks = String(matchedGstData[rowItem.key]);
           }
-        } else if (row.detail === 'Invoice Number & Date' && matchedGstData) {
+        } else if (rowItem.detail === 'Invoice Number & Date' && matchedGstData) {
           remarks = `${matchedGstData['InvoiceNo'] || ''} ${matchedGstData['InvoiceDate'] || ''}`.trim();
         }
-        doc.text(row.no, leftPad + 2, y);
-        doc.text(row.detail, leftPad + 28, y);
+        doc.text(rowItem.no, leftPad + 2, y);
+        doc.text(rowItem.detail, leftPad + 28, y);
         doc.setTextColor(80, 80, 80);
         doc.text(remarks, leftPad + 95, y);
         doc.setTextColor(0, 0, 0);
@@ -203,6 +231,40 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   };
 
   const handleRejectAndGenerate = async () => {
+    setOpenReturnModal(true);
+  };
+
+  const handleReturnModalSubmit = async () => {
+    setOpenReturnModal(false);
+    // Map remarks to keys
+    const mapping = {
+      MA: 0, // Manufacturer’s Authorization (MA) required for Delivery Period extension — please attach.
+      GSTR2A: 1, // Invoice details not reflected in GSTR-2A for Invoice No.
+      CopyTaxIC: 2, // Copy of Tax Invoice / IC not attached.
+      InvoiceMismatch: 3, // Invoice Number mismatch between bill and supporting documents.
+      Refund: 4, // Refund undertaking not attached.
+      InvoiceCO6: 5 // Passing a duplicate invoice for the same supplier in the same financial year is not permissible. Invoice already passed against CO6 Number.
+    };
+    const returnNoteData = {
+      SNo: row.SNo,
+      MA: returnInputs[mapping.MA]?.remark || '',
+      GSTR2A: returnInputs[mapping.GSTR2A]?.remark || '',
+      CopyTaxIC: returnInputs[mapping.CopyTaxIC]?.remark || '',
+      InvoiceMismatch: returnInputs[mapping.InvoiceMismatch]?.remark || '',
+      Refund: returnInputs[mapping.Refund]?.remark || '',
+      InvoiceCO6: returnInputs[mapping.InvoiceCO6]?.remark || ''
+    };
+    // Send to backend
+    try {
+      await expenditureService.putNoteData(returnNoteData, 'RejectionNote');
+    } catch (err) {
+      console.error('Error saving return note:', err);
+    }
+    // Then generate the PDF
+    await handleRejectAndGeneratePDF(returnInputs);
+  };
+
+  const handleRejectAndGeneratePDF = async (reasons: { reason: string, remark: string }[]) => {
     setLoading(true);
     try {
       // Fetch all GST invoice data
@@ -210,13 +272,15 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       const gstDataArray = gstDataFetched.data;
       // Find the GST data object matching the current row's SNo
       const matchedGstData = gstDataArray.find((item: any) => String(item.SNo) === String(row.SNo));
-      let unmatchedResults: string[] = [];
+      let unmatchedResults: { text: string, reviewer: string, reviewTime: string, reviewRemark: string }[] = [];
       if (matchedGstData && matchedGstData.Remarks) {
         try {
-          const remarksObj = JSON.parse(matchedGstData.Remarks);
-          if (Array.isArray(remarksObj.UnmatchedResults)) {
-            unmatchedResults = remarksObj.UnmatchedResults;
-          }
+          // Use parseMatchedUnmatched to extract unmatched points
+          const { unmatched } = parseMatchedUnmatched(matchedGstData.Remarks);
+          // Process each unmatched point with extractReviewer
+          const processedUnmatched = unmatched.map(point => extractReviewer(point));
+          console.log("lllllll", processedUnmatched);
+          unmatchedResults = processedUnmatched;
         } catch (e) {
           // If parsing fails, leave unmatchedResults empty
         }
@@ -244,39 +308,57 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       doc.setFontSize(12);
       doc.text('The following observations need to be addressed before the bill can be processed:', leftPad, y);
       y += 8;
-      // Bullet points section with subtle background
-      doc.setFillColor(245, 245, 245);
-      doc.rect(leftPad - 4, y - 2, 165, 8 * Math.max(1, unmatchedResults.length), 'F');
-      const lineHeight = 6;
-      if (unmatchedResults.length > 0) {
-        unmatchedResults.forEach((point, idx) => {
-          const { text } = extractReviewer(point);
-          const lines = doc.splitTextToSize(`${idx + 1}. ${text}`, 160);
-          lines.forEach((line: string) => {
+      // Print reasons and remarks
+      if (reasons && reasons.length > 0) {
+        reasons.forEach(({ reason, remark }, idx) => {
+          const reasonLines = doc.splitTextToSize(`${idx + 1}. ${reason}`, 160);
+          reasonLines.forEach((line: string) => {
             if (y > 270) { doc.addPage(); y = 25; }
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(11);
             doc.text(line, leftPad, y);
-            y += lineHeight;
+            y += 6;
+          });
+          const displayRemark = remark && remark.trim() !== '' ? remark : 'N/A';
+          const remarkLines = doc.splitTextToSize(`Remark: ${displayRemark}`, 150);
+          remarkLines.forEach((line: string) => {
+            if (y > 270) { doc.addPage(); y = 25; }
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(10);
+            doc.setTextColor(120, 0, 0);
+            doc.text(line, leftPad + 8, y);
+            y += 5;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+          });
+        });
+      }
+      // Add the fixed line before unmatched points
+      y += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(0, 51, 153);
+      doc.text('Please rectify the above points and resubmit for bill passing.', leftPad, y);
+      y += 10;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      // Bullet points section for unmatched results
+      if (unmatchedResults.length > 0) {
+        unmatchedResults.forEach((pointObj, idx) => {
+          const text = pointObj.text || pointObj;
+          const lines = doc.splitTextToSize(`${idx + 1}. ${text}`, 160);
+          lines.forEach((line: string) => {
+            if (y > 270) { doc.addPage(); y = 25; }
+            doc.text(line, leftPad, y);
+            y += 6;
           });
         });
       } else {
         doc.text('No specific remarks found.', leftPad, y);
         y += 8;
       }
-      y += 6;
-      // Action Required section with highlight
-      doc.setFillColor(255, 255, 255);
-      doc.rect(leftPad - 4, y - 2, 165, 14, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.setTextColor(0, 51, 153);
-      doc.text('Action Required:', leftPad, y + 7);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      y += 12;
-      doc.text('Please rectify the above points and resubmit for bill passing.', leftPad, y);
       doc.save(`Return_Note_SNo_${row.SNo}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -512,14 +594,264 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
           </>
           )}
       {/* </Box> */}
-      {/* </Box> */}
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: '60%', mt: 5, pl: 25, pr: 10, }}>
-        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#00D1FF', color: '#fff', }} onClick={handlePassAndGenerate} disabled={loading}>
+        <Button
+          sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#00D1FF', color: '#fff', }}
+          onClick={async () => {
+            setLoading(true);
+            try {
+              const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
+              const noteData = noteDataResponse?.data;
+              console.log("jjj",noteDataResponse,noteData)
+              if (noteData) {
+                // If data is present, use it to generate the PDF
+                const financeInputs = {
+                  co6No: noteData.CO6No || '',
+                  ld: noteData.Ld || '',
+                  otherDeductions: noteData.Otherdedunctions || '',
+                  netPayment: noteData.NetPayment || ''
+                };
+                await handlePassAndGenerate(financeInputs);
+              } else {
+                // If no data, open the dialog to take inputs
+                setOpenFinanceModal(true);
+              }
+            } catch (err) {
+              // On error, fallback to opening the dialog
+              setOpenFinanceModal(true);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading || row.Status !== 'approved'}
+        >
           {loading ? 'Processing...' : 'Pass & Generate Finance Note'}
         </Button>
-        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#FF3B3F', color: '#fff',}} onClick={handleRejectAndGenerate} disabled={loading}> {loading ? 'Processing...' : 'Reject & Generate Return Note'}</Button>
+        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#FF3B3F', color: '#fff',}}
+  onClick={async () => {
+    setLoading(true);
+    try {
+      const noteDataResponse = await expenditureService.getNoteData('RejectionNote', row.SNo);
+      const noteData = noteDataResponse?.data;
+      if (noteData) {
+        // If data is present, map it to the reasons/remarks and generate the PDF
+        const mappedReasons = [
+          { reason: returnReasons[0], remark: noteData.MA || '' },
+          { reason: returnReasons[1], remark: noteData.GSTR2A || '' },
+          { reason: returnReasons[2], remark: noteData.CopyTaxIC || '' },
+          { reason: returnReasons[3], remark: noteData.InvoiceMismatch || '' },
+          { reason: returnReasons[4], remark: noteData.Refund || '' },
+          { reason: returnReasons[5], remark: noteData.InvoiceCO6 || '' },
+        ];
+        await handleRejectAndGeneratePDF(mappedReasons);
+      } else {
+        // If no data, open the dialog to take inputs
+        setOpenReturnModal(true);
+      }
+    } catch (err) {
+      // On error, fallback to opening the dialog
+      setOpenReturnModal(true);
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading || row.Status !== 'rejected'}>
+  {loading ? 'Processing...' : 'Reject & Generate Return Note'}
+</Button>
         <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#6A5ACD', color: '#fff', }} onClick={() => setShowReviewCheck(true)}>Review & Update Observatons</Button>
       </Box>
+      <Dialog open={openFinanceModal} onClose={() => setOpenFinanceModal(false)} PaperProps={{
+  sx: {
+    borderRadius: 4,
+    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+    boxShadow: 24,
+    p: 0,
+    minWidth: 400,
+    maxWidth: 500,
+  }
+}}>
+  <DialogTitle sx={{
+    fontWeight: 700,
+    fontSize: '1.3rem',
+    color: '#222',
+    background: 'rgba(0,0,0,0.04)',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    pb: 1.5,
+    pt: 2,
+    px: 3
+  }}>
+    Enter Finance Note Details
+  </DialogTitle>
+  <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
+  <DialogContent sx={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    background: 'rgba(255,255,255,0.85)',
+    px: 3,
+    py: 2,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16
+  }}>
+    <TextField
+      label="Bill Passed Vide CO6 No."
+      fullWidth
+      margin="dense"
+      variant="outlined"
+      value={financeInputs.co6No}
+      onChange={e => setFinanceInputs({ ...financeInputs, co6No: e.target.value })}
+      sx={{ background: '#f7fafd', borderRadius: 2 }}
+    />
+    <TextField
+      label="Liquidated Damages (L.D)"
+      fullWidth
+      margin="dense"
+      variant="outlined"
+      value={financeInputs.ld}
+      onChange={e => setFinanceInputs({ ...financeInputs, ld: e.target.value })}
+      sx={{ background: '#f7fafd', borderRadius: 2 }}
+    />
+    <TextField
+      label="Other Deductions (if any)"
+      fullWidth
+      margin="dense"
+      variant="outlined"
+      value={financeInputs.otherDeductions}
+      onChange={e => setFinanceInputs({ ...financeInputs, otherDeductions: e.target.value })}
+      sx={{ background: '#f7fafd', borderRadius: 2 }}
+    />
+    <TextField
+      label="Net Payment Recommended"
+      fullWidth
+      margin="dense"
+      variant="outlined"
+      value={financeInputs.netPayment}
+      onChange={e => setFinanceInputs({ ...financeInputs, netPayment: e.target.value })}
+      sx={{ background: '#f7fafd', borderRadius: 2 }}
+    />
+  </DialogContent>
+  <DialogActions sx={{
+    background: 'rgba(0,0,0,0.04)',
+    px: 3,
+    py: 2,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 2
+  }}>
+    <Button onClick={() => setOpenFinanceModal(false)} sx={{ color: '#555', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
+    <Button
+      onClick={async () => {
+        setOpenFinanceModal(false);
+        // Prepare the finance note data object
+        const financeNoteData = {
+          SNo: row.SNo,
+          co6No: financeInputs.co6No,
+          ld: financeInputs.ld,
+          sd: null,
+          otherDeductions: financeInputs.otherDeductions,
+          netPayment: financeInputs.netPayment
+        };
+        // Send to backend
+        try {
+          await expenditureService.putNoteData(financeNoteData, 'FinanceNote');
+        } catch (err) {
+          console.error('Error saving finance note:', err);
+        }
+        // Then generate the PDF
+        handlePassAndGenerate(financeInputs);
+      }}
+      variant="contained"
+      sx={{
+        background: 'linear-gradient(90deg, #00D1FF 0%, #00C49F 100%)',
+        color: '#fff',
+        fontWeight: 700,
+        borderRadius: 2,
+        px: 3,
+        boxShadow: '0 2px 8px rgba(0,209,255,0.08)'
+      }}
+    >
+      Generate
+    </Button>
+  </DialogActions>
+</Dialog>
+<Dialog open={openReturnModal} onClose={() => setOpenReturnModal(false)} PaperProps={{
+  sx: {
+    borderRadius: 4,
+    background: 'linear-gradient(135deg, #fff1f0 0%, #f7d9d9 100%)',
+    boxShadow: 24,
+    p: 0,
+    minWidth: 400,
+    maxWidth: 500,
+  }
+}}>
+  <DialogTitle sx={{
+    fontWeight: 700,
+    fontSize: '1.3rem',
+    color: '#b71c1c',
+    background: 'rgba(255,0,0,0.04)',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    pb: 1.5,
+    pt: 2,
+    px: 3
+  }}>
+    Enter Return Note Reasons
+  </DialogTitle>
+  <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
+  <DialogContent sx={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    background: 'rgba(255,255,255,0.85)',
+    px: 3,
+    py: 2,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16
+  }}>
+    {returnInputs.map((item, idx) => (
+      <Box key={idx} sx={{ mb: 2 }}>
+        <Typography variant="body2" sx={{ color: '#b71c1c', fontWeight: 500, mb: 0.5 }}>{item.reason}</Typography>
+        <TextField
+          placeholder="Enter remark"
+          value={item.remark}
+          onChange={e => handleReturnRemarkChange(idx, e.target.value)}
+          fullWidth
+          size="small"
+          sx={{ background: '#fff', borderRadius: 2 }}
+        />
+      </Box>
+    ))}
+  </DialogContent>
+  <DialogActions sx={{
+    background: 'rgba(255,0,0,0.04)',
+    px: 3,
+    py: 2,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 2
+  }}>
+    <Button onClick={() => setOpenReturnModal(false)} sx={{ color: '#b71c1c', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
+    <Button
+      onClick={handleReturnModalSubmit}
+      variant="contained"
+      sx={{
+        background: 'linear-gradient(90deg, #FF3B3F 0%, #FFBABA 100%)',
+        color: '#fff',
+        fontWeight: 700,
+        borderRadius: 2,
+        px: 3,
+        boxShadow: '0 2px 8px rgba(255,59,63,0.08)'
+      }}
+    >
+      Generate
+    </Button>
+  </DialogActions>
+</Dialog>
     </Paper>
   );
 };

@@ -170,6 +170,47 @@ export const expenditureService = {
         throw error;
       }
   },
+  getNoteData: async (document: String, Sno: Number) => {
+    try {
+
+      const payload = {
+        documentType: document,
+        Sno: Sno 
+      }
+      const response = await fetchWrapper.post(`${config.apiUrl}/api/get-financenote-data`, payload);
+      console.log("fetched note data", response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching note data:', error);
+      throw error;
+    }
+  },
+
+  putNoteData: async (row: any, documentType: string) => {
+    try {
+      const payload = {
+        row,
+        documentType
+      };
+      const response = await fetchWrapper.post(`${config.apiUrl}/api/update-financenote-data`, payload);
+      console.log("updated note data", response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating note data:', error);
+      throw error;
+    }
+  },
+
+  updateGstInvoiceData: async (row: any) => {
+    try {
+      const response = await fetchWrapper.post(`${config.apiUrl}/api/update-gstinvoice-data`, { row });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating GST invoice data:', error);
+      throw error;
+    }
+  },
+
   getdata
 }; 
 
