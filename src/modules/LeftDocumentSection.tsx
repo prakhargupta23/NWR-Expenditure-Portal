@@ -40,6 +40,7 @@ interface DocumentRow {
   VerificationTime: string;
   AuthorizationCommittee: string;
   Remark: string;
+  NoteGeneration?: string | null;
 }
 
 const documentTypes = [
@@ -539,6 +540,7 @@ export default function LeftDocumentSection() {
                   <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Status</TableCell>
                   <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>IREPS No.</TableCell>
                   <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Verified At</TableCell>
+                  <TableCell sx={{ background: "rgba(0, 0, 0, 1)", color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Note Generated</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -568,6 +570,7 @@ export default function LeftDocumentSection() {
                     </TableCell>
                     <TableCell align="center" sx={{ color: 'white' }}>{row.AuthorizationCommittee}</TableCell>
                     <TableCell align="center" sx={{ color: 'white' }}>{row.VerificationTime || '-'}</TableCell>
+                    <TableCell align="center" sx={{ color: 'white' }}>{row.NoteGeneration || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

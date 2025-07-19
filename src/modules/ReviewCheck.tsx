@@ -105,6 +105,8 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
     setLoading(true);
     let newMatched: string[] = [];
     let newUnmatched: string[] = [];
+    console.log("matched",matched)
+    console.log("unmatched",unmatched)
     const currentDateTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     localPoints.forEach(({ point, status }, idx) => {

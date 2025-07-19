@@ -128,7 +128,21 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   return (
       <Box sx={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'left', justifyContent: 'flex-start', pt: 2 }}>
         <Box sx={{ width: '100%', maxWidth: 500, display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Button onClick={() => setShowReviewCheck(false)} sx={{ color: '#222', background: 'rgba(255,255,255,0.7)', ml: 2, fontWeight: 700, borderRadius: 2 }}>
+          <Button onClick={async () => {
+            // Fetch latest data
+            try {
+              const dataFetched = await expenditureService.getExpenditureData();
+              const data = dataFetched.data || [];
+              const updatedRow = data.find((item: any) => String(item.SNo) === String(row.SNo));
+              if (updatedRow) {
+                // Optionally update local state or inform parent here
+                Object.assign(row, updatedRow);
+              }
+            } catch (err) {
+              console.error('Error fetching latest expenditure data:', err);
+            }
+            setShowReviewCheck(false);
+          }} sx={{ color: '#222', background: 'rgba(255,255,255,0.7)', ml: 2, fontWeight: 700, borderRadius: 2 }}>
             Back
           </Button>
         </Box>
@@ -257,6 +271,9 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     // Send to backend
     try {
       await expenditureService.putNoteData(returnNoteData, 'RejectionNote');
+      // Update expenditure data with 
+      console.log("updating note generation")
+      await expenditureService.updateExpenditureData({ ...row, NoteGeneration: 'RejectionNote' });
     } catch (err) {
       console.error('Error saving return note:', err);
     }
@@ -757,6 +774,9 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         // Send to backend
         try {
           await expenditureService.putNoteData(financeNoteData, 'FinanceNote');
+          // Update expenditure data with NoteGeneration
+          console.log("updating note generation")
+          await expenditureService.updateExpenditureData({ ...row, NoteGeneration: 'FinanceNote' });
         } catch (err) {
           console.error('Error saving finance note:', err);
         }
