@@ -111,7 +111,7 @@ export default function Expenditure() {
               },
             }}
           >
-            Document Upload
+            AI Agent
           </Button>
           <Button
             onClick={() => setSelectedTab('review')}

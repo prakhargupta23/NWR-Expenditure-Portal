@@ -191,7 +191,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         { no: '3.', detail: 'Bill Passed Vide CO6 No.', value: inputs?.co6No || '' },
         { no: '4.', detail: 'Invoice Number & Date', key: '' },
         { no: '5.', detail: 'Receipt Note Number', key: 'RNoteNo' },
-        { no: '6.', detail: 'Material Received On', key: '' },
+        { no: '6.', detail: 'Material Received On', key: 'InvoiceDate' },
         { no: '7.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
         { no: '8.', detail: 'Liquidated Damages (L.D)', value: inputs?.ld || '' },
         { no: '9.', detail: 'Security Deposit (S.D)', key: 'Security' },

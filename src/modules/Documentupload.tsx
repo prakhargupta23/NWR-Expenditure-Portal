@@ -55,7 +55,7 @@ export interface DocumentRow {
 const documentTypes = [
   { key: "ReceiptNote", label: "Receipt Note", icon: "📄" },
   { key: "TaxInvoice", label: "Tax Invoice", icon: "🧾" },
-  { key: "GSTInvoice", label: "GST Invoice", icon: "📋" },
+  { key: "GSTInvoice", label: "Bill", icon: "📋" },
   { key: "ModificationAdvice", label: "Modification Advice", icon: "✏️" },
   { key: "PurchaseOrder", label: "Purchase Order", icon: "📝" },
   { key: "InspectionCertificate", label: "Inspection Certificate", icon: "🔍" },
@@ -549,7 +549,7 @@ export default function DocumentUpload({ onTabChange }: DocumentUploadProps) {
                   </Box>
                   <Box sx={{ textAlign: 'left',mt: 3,mb: 1 }}>
                     <Typography variant="h5" sx={{ color: 'rgba(255,255,255,1)', fontSize: '30px', fontWeight: 700, lineHeight: 1.2, }}>
-                      Document Upload
+                      AI Agent
                     </Typography>
                     <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 600, lineHeight: 1.5, }}>
                       Select and upload the files of your choice

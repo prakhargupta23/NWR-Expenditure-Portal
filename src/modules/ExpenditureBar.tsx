@@ -74,7 +74,7 @@ export default function ExpenditureBar({
                                 fontSize: "24px",
                                 fontFamily: "MyCustomFont,SourceSerif4_18pt",
                                 textTransform: "none",
-                            }}>Expenditure Dashboard</Typography>
+                            }}>Expenditure AI Agent</Typography>
                             <Typography
                                 variant="h6"
                                 sx={{
