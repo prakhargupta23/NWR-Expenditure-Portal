@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Box, Card, CardContent, Typography, Grid, Avatar, List, ListItem,
-  ListItemIcon, ListItemText, Divider, Chip, Stack, CircularProgress
+  ListItemIcon, ListItemText, Divider, Chip, Stack, CircularProgress, TextField
 } from "@mui/material";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { expenditureService } from "../services/expenditure.service";
 // import { takeUntil } from "rxjs";
+import { useMemo } from 'react';
 
 // Helper to extract status from row (Status or Remarks.Status)
 function extractStatus(row: DocumentRow) {
@@ -178,6 +179,14 @@ function getRowsFromCurrentMonth(rows: DocumentRow[]): DocumentRow[] {
 
 
 export default function Dashboard() {
+  // Add default date variables at the top of the component
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const defaultTo = `${yyyy}-${mm}-${dd}`;
+  const defaultFrom = `${yyyy}-${mm}-01`;
+
   const [statusCounts, setStatusCounts] = useState([
     { name: "Approved", count: 0 },
     { name: "Rejected", count: 0 },
@@ -213,6 +222,130 @@ export default function Dashboard() {
   ]);
   const [loading, setLoading] = useState(true);
 
+  // 1. Add new state for monthly amount trends
+  const [lineAmountData, setLineAmountData] = useState([
+    { name: 'Jan', approved: 0, rejected: 0, total: 0 },
+    { name: 'Feb', approved: 0, rejected: 0, total: 0 },
+    { name: 'Mar', approved: 0, rejected: 0, total: 0 },
+    { name: 'Apr', approved: 0, rejected: 0, total: 0 },
+    { name: 'May', approved: 0, rejected: 0, total: 0 },
+    { name: 'Jun', approved: 0, rejected: 0, total: 0 },
+    { name: 'Jul', approved: 0, rejected: 0, total: 0 },
+    { name: 'Aug', approved: 0, rejected: 0, total: 0 },
+    { name: 'Sep', approved: 0, rejected: 0, total: 0 },
+    { name: 'Oct', approved: 0, rejected: 0, total: 0 },
+    { name: 'Nov', approved: 0, rejected: 0, total: 0 },
+    { name: 'Dec', approved: 0, rejected: 0, total: 0 },
+  ]);
+
+  // 1. Add state for date range and filtered data
+  const [fromDate, setFromDate] = useState(defaultFrom);
+  const [toDate, setToDate] = useState(defaultTo);
+  const [allRows, setAllRows] = useState<DocumentRow[]>([]); // Store all data rows
+
+  // Update the filtered data computation to include all chart data
+  const filteredRows = useMemo(() => {
+    if (!allRows.length) return [];
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    to.setHours(23,59,59,999);
+    return allRows.filter((row) => {
+      const date = extractCreatedDate(row);
+      return date && date >= from && date <= to;
+    });
+  }, [allRows, fromDate, toDate]);
+
+  // 3. Compute filtered chart data based on date range
+  const filteredStatusCounts = useMemo(() => {
+    let approved = 0, rejected = 0, pending = 0;
+    let approvedAmount = 0, rejectedAmount = 0;
+    
+    filteredRows.forEach((row) => {
+      const status = extractStatus(row);
+      const amt = extractAmount(row);
+      
+      if (status === "approved") {
+        approved++;
+        approvedAmount += amt;
+      } else if (status === "rejected") {
+        rejected++;
+        rejectedAmount += amt;
+      } else if (status === "pending") {
+        pending++;
+      }
+    });
+    
+    return {
+      statusCounts: [
+        { name: "Approved", count: approved },
+        { name: "Rejected", count: rejected },
+        { name: "Pending", count: pending },
+        { name: "Total", count: filteredRows.length }
+      ],
+      pieData2: [
+        { name: "Approved Amount", value: approvedAmount },
+        { name: "Rejected Amount", value: rejectedAmount },
+      ]
+    };
+  }, [filteredRows]);
+
+  // 4. Compute filtered monthly data
+  const filteredMonthlyData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = months.map(month => ({ name: month, documents: 0, reviews: 0, approvals: 0 }));
+    const monthlyAmountData = months.map(month => ({ name: month, approved: 0, rejected: 0, total: 0 }));
+    
+    filteredRows.forEach((row) => {
+      const status = extractStatus(row);
+      const amt = extractAmount(row);
+      const date = extractCreatedDate(row);
+      
+      if (date) {
+        const monthIdx = date.getMonth();
+        if (monthIdx >= 0 && monthIdx < monthlyData.length) {
+          monthlyData[monthIdx].documents += 1;
+          if (status !== "pending") monthlyData[monthIdx].reviews += 1;
+          if (status === "approved") monthlyData[monthIdx].approvals += 1;
+          
+          // Amount trends
+          if (status === "approved") monthlyAmountData[monthIdx].approved += amt;
+          if (status === "rejected") monthlyAmountData[monthIdx].rejected += amt;
+          monthlyAmountData[monthIdx].total += amt;
+        }
+      }
+    });
+    
+    return { monthlyData, monthlyAmountData };
+  }, [filteredRows]);
+
+  const currentWeekData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekData = days.map((day) => ({ name: day, uv: 0, pv: 0, amt: 0 }));
+    if (!allRows.length) return weekData;
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    allRows.forEach((row) => {
+      const status = extractStatus(row);
+      const date = extractCreatedDate(row);
+      if (!date) return;
+      if (date >= startOfWeek && date <= endOfWeek) {
+        const dayIdx = date.getDay();
+        if (dayIdx >= 0 && dayIdx < weekData.length) {
+          weekData[dayIdx].uv += 1;
+          if (status !== "pending") weekData[dayIdx].pv += 1;
+          weekData[dayIdx].amt = weekData[dayIdx].uv + weekData[dayIdx].pv;
+        }
+      }
+    });
+    return weekData;
+  }, [allRows]);
+
+
   async function fetchDashboardData() {
     setLoading(true);
     try {
@@ -220,6 +353,7 @@ export default function Dashboard() {
       let data = res.data || [];
       // Remove rows with IREPSNo null
       data = data.filter((row: DocumentRow) => row.IREPSNo != null);
+      data = data.filter((row: DocumentRow) => row.Status != 'pending');
       // Filter to unique IREPSNo (first occurrence)
       const seen = new Set();
       data = data.filter((row: DocumentRow) => {
@@ -237,6 +371,7 @@ export default function Dashboard() {
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const today = new Date();
       const startOfWeek = getStartOfWeek(today);
+      console.log("week",today,startOfWeek)
       const weekData = days.map((day, i) => ({ name: day, uv: 0, pv: 0, amt: 0 }));
       console.log("week data",weekData)
       // Monthly data
@@ -246,6 +381,9 @@ export default function Dashboard() {
       ];
       const currentYear = today.getFullYear();
       const monthlyData = months.map((month, i) => ({ name: month, documents: 0, reviews: 0, approvals: 0 }));
+
+      // 2. In fetchDashboardData, compute monthly approved, rejected, and total amounts
+      const monthlyAmountData = months.map((month, i) => ({ name: month, approved: 0, rejected: 0, total: 0 }));
 
       data.forEach((row: DocumentRow) => {
         const status = extractStatus(row);
@@ -302,6 +440,10 @@ export default function Dashboard() {
               approvals: monthlyData[monthIdx].approvals 
             });
           }
+          // Amount trends
+          if (status === "approved") monthlyAmountData[monthIdx].approved += amt;
+          if (status === "rejected") monthlyAmountData[monthIdx].rejected += amt;
+          monthlyAmountData[monthIdx].total += amt;
         }
       });
       
@@ -319,6 +461,8 @@ export default function Dashboard() {
       ]);
       setChartData(weekData);
       setLineData(monthlyData);
+      setLineAmountData(monthlyAmountData);
+      setAllRows(data); // Store all data
     } catch (e) {
       setStatusCounts([
         { name: "Approved", count: 0 },
@@ -353,6 +497,21 @@ export default function Dashboard() {
         { name: 'Nov', documents: 0, reviews: 0, approvals: 0 },
         { name: 'Dec', documents: 0, reviews: 0, approvals: 0 },
       ]);
+      setLineAmountData([
+        { name: 'Jan', approved: 0, rejected: 0, total: 0 },
+        { name: 'Feb', approved: 0, rejected: 0, total: 0 },
+        { name: 'Mar', approved: 0, rejected: 0, total: 0 },
+        { name: 'Apr', approved: 0, rejected: 0, total: 0 },
+        { name: 'May', approved: 0, rejected: 0, total: 0 },
+        { name: 'Jun', approved: 0, rejected: 0, total: 0 },
+        { name: 'Jul', approved: 0, rejected: 0, total: 0 },
+        { name: 'Aug', approved: 0, rejected: 0, total: 0 },
+        { name: 'Sep', approved: 0, rejected: 0, total: 0 },
+        { name: 'Oct', approved: 0, rejected: 0, total: 0 },
+        { name: 'Nov', approved: 0, rejected: 0, total: 0 },
+        { name: 'Dec', approved: 0, rejected: 0, total: 0 },
+      ]);
+      setAllRows([]); // Clear all rows on error
     }
     setLoading(false);
   }
@@ -404,6 +563,83 @@ export default function Dashboard() {
         {/* Main Content */}
         <Box sx={{ flex: 1, p: 4, background: 'rgba(255,255,255,0.1)', minHeight: 400 }}>
           <Grid container spacing={3}>
+            {/* Bar + Line Chart - Move this to the top */}
+            <Grid item xs={12} md={12}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, p: 5, mb: 0, height: 270 }}>
+                <CardContent sx={{ p: 0 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontSize: '1rem' }}>Current Week Activity (Bar + Line)</Typography>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={currentWeekData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} />
+                      <Legend wrapperStyle={{ fontSize: '0.7rem' }} iconSize={15} />
+                      <Bar dataKey="uv" fill="#8884d8" radius={[8, 8, 0, 0]} name="Uploads" />
+                      <Line type="monotone" dataKey="pv" stroke="#00C49F" strokeWidth={2} name="Views" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Date Selection - moved after Current Week Activity */}
+            <Grid item xs={12} md={12}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, color: '#fff' }}>
+                 <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700, mr: 2 }}>Filter by Date Range:</Typography>
+                  <TextField
+                   label="From"
+                   type="date"
+                   size="small"
+                   value={fromDate}
+                   onChange={e => setFromDate(e.target.value)}
+                   InputLabelProps={{ shrink: true }}
+                   sx={{
+                     '& .MuiOutlinedInput-root': {
+                       color: '#fff',
+                       '& fieldset': {
+                         borderColor: '#fff',
+                       },
+                       '&:hover fieldset': {
+                         borderColor: '#fff',
+                       },
+                       '&.Mui-focused fieldset': {
+                         borderColor: '#fff',
+                       },
+                     },
+                     '& .MuiInputLabel-root': {
+                       color: '#fff',
+                     },
+                   }}
+                 />
+                 <TextField
+                   label="To"
+                   type="date"
+                   size="small"
+                   value={toDate}
+                   onChange={e => setToDate(e.target.value)}
+                   InputLabelProps={{ shrink: true }}
+                   sx={{
+                     '& .MuiOutlinedInput-root': {
+                       color: '#fff',
+                       '& fieldset': {
+                         borderColor: '#fff',
+                       },
+                       '&:hover fieldset': {
+                         borderColor: '#fff',
+                       },
+                       '&.Mui-focused fieldset': {
+                         borderColor: '#fff',
+                       },
+                     },
+                     '& .MuiInputLabel-root': {
+                       color: '#fff',
+                     },
+                   }}
+                 />
+              </Box>
+            </Grid>
+            
             {/* Approved */}
             <Grid item xs={12} md={4}>
               <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
@@ -412,7 +648,7 @@ export default function Dashboard() {
                     <Chip label="Approved" color="success" size="medium" />
                   </Stack>
                   <Typography variant="h5" color="#4caf50" align="center" fontWeight={700}>
-                    {statusCounts.find(s => s.name === "Approved")?.count ?? 0}
+                    {filteredStatusCounts.statusCounts.find(s => s.name === "Approved")?.count ?? 0}
                   </Typography>
                 </CardContent>
               </Card>
@@ -425,7 +661,7 @@ export default function Dashboard() {
                     <Chip label="Total" color="warning" size="medium" />
                   </Stack>
                   <Typography variant="h5" color="#ff9800" align="center" fontWeight={700}>
-                    {statusCounts.find(s => s.name === "Total")?.count ?? 0}
+                    {filteredStatusCounts.statusCounts.find(s => s.name === "Total")?.count ?? 0}
                   </Typography>
                 </CardContent>
               </Card>
@@ -438,7 +674,7 @@ export default function Dashboard() {
                     <Chip label="Rejected" color="error" size="medium" />
                   </Stack>
                   <Typography variant="h5" color="#f44336" align="center" fontWeight={700}>
-                    {statusCounts.find(s => s.name === "Rejected")?.count ?? 0}
+                    {filteredStatusCounts.statusCounts.find(s => s.name === "Rejected")?.count ?? 0}
                   </Typography>
                 </CardContent>
               </Card>
@@ -452,7 +688,7 @@ export default function Dashboard() {
                     <Chip label="Approved Amount" color="success" size="medium" />
                   </Stack>
                   <Typography variant="h5" color="#4caf50" align="center" fontWeight={700}>
-                    ₹{pieData2.find(s => s.name === "Approved Amount")?.value.toLocaleString() ?? 0}
+                    ₹{filteredStatusCounts.pieData2.find(s => s.name === "Approved Amount")?.value.toLocaleString() ?? 0}
                   </Typography>
                 </CardContent>
               </Card>
@@ -466,7 +702,7 @@ export default function Dashboard() {
                     <Chip label="Total Amount" color="warning" size="medium" />
                   </Stack>
                   <Typography variant="h5" color="#ff9800" align="center" fontWeight={700}>
-                    ₹{(pieData2.find(s => s.name === "Approved Amount")?.value ?? 0) + (pieData2.find(s => s.name === "Rejected Amount")?.value ?? 0)}
+                    ₹{(filteredStatusCounts.pieData2.find(s => s.name === "Approved Amount")?.value ?? 0) + (filteredStatusCounts.pieData2.find(s => s.name === "Rejected Amount")?.value ?? 0)}
                   </Typography>
                 </CardContent>
               </Card>
@@ -480,7 +716,7 @@ export default function Dashboard() {
                     <Chip label="Rejected Amount" color="error" size="medium" />
                   </Stack>
                   <Typography variant="h5" color="#f44336" align="center" fontWeight={700}>
-                    ₹{pieData2.find(s => s.name === "Rejected Amount")?.value.toLocaleString() ?? 0}
+                    ₹{filteredStatusCounts.pieData2.find(s => s.name === "Rejected Amount")?.value.toLocaleString() ?? 0}
                   </Typography>
                 </CardContent>
               </Card>
@@ -498,7 +734,7 @@ export default function Dashboard() {
                     <ResponsiveContainer width={200} height={200}>
                       <PieChart>
                         <Pie
-                          data={statusCounts.filter(s => s.name === "Approved" || s.name === "Rejected")}
+                          data={filteredStatusCounts.statusCounts.filter(s => s.name === "Approved" || s.name === "Rejected")}
                           dataKey="count"
                           nameKey="name"
                           cx="50%"
@@ -506,7 +742,7 @@ export default function Dashboard() {
                           outerRadius={70}
                           label={false}
                         >
-                          {statusCounts.filter(s => s.name === "Approved" || s.name === "Rejected").map((entry, index) => (
+                          {filteredStatusCounts.statusCounts.filter(s => s.name === "Approved" || s.name === "Rejected").map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={
                               entry.name === "Approved" ? "#4caf50" :
                               entry.name === "Rejected" ? "#f44336" :
@@ -538,25 +774,29 @@ export default function Dashboard() {
               </Card>
             </Grid>
 
-            {/* Bar + Line Chart */}
+
+            {/* Line Chart for Amounts */}
             <Grid item xs={12} md={7}>
-              <Card sx={{ borderRadius: 3, boxShadow: 3, p: 5, mb: 0, height: 270 }}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, p: 5, height: 270 }}>
                 <CardContent sx={{ p: 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontSize: '1rem' }}>Current Week Activity (Bar + Line)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0, fontSize: '1rem' }}>Current Year Monthly Trends (Amount)</Typography>
                   <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={chartData}>
+                    <LineChart data={filteredMonthlyData.monthlyAmountData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} />
-                      <Legend wrapperStyle={{ fontSize: '0.7rem' }} iconSize={15} />
-                      <Bar dataKey="uv" fill="#8884d8" radius={[8, 8, 0, 0]} name="Uploads" />
-                      <Line type="monotone" dataKey="pv" stroke="#00C49F" strokeWidth={2} name="Views" />
-                    </BarChart>
+                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} formatter={v => `₹${v.toLocaleString()}`}/>
+                      <Legend wrapperStyle={{ fontSize: '0.7rem' }} iconSize={10} />
+                      <Line type="monotone" dataKey="approved" stroke="#4caf50" strokeWidth={2} name="Approved Amount" />
+                      <Line type="monotone" dataKey="rejected" stroke="#f44336" strokeWidth={2} name="Rejected Amount" />
+                      <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} name="Total Amount" />
+                    </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
             </Grid>
+
+            
 
             {/* Pie Chart 2 */}
             <Grid item xs={12} md={5}>
@@ -567,11 +807,11 @@ export default function Dashboard() {
                     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
                       <CircularProgress />
                     </Box>
-                  ) : pieData2.length > 0 ? (
+                  ) : filteredStatusCounts.pieData2.length > 0 ? (
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
                         <Pie
-                          data={pieData2}
+                          data={filteredStatusCounts.pieData2}
                           cx="50%"
                           cy="50%"
                           outerRadius={70}
@@ -580,7 +820,7 @@ export default function Dashboard() {
                           nameKey="name"
                           label={false}
                         >
-                          {pieData2.map((entry, index) => (
+                          {filteredStatusCounts.pieData2.map((entry, index) => (
                             <Cell key={`cell2-${index}`} fill={
                               entry.name === "Approved Amount" ? "#4caf50" : "#f44336"
                             } />
@@ -619,7 +859,7 @@ export default function Dashboard() {
                 <CardContent sx={{ p: 0 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 0, fontSize: '1rem' }}>Current Year Monthly Trends (Line Chart)</Typography>
                   <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={lineData}>
+                    <LineChart data={filteredMonthlyData.monthlyData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
@@ -633,6 +873,10 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </Grid>
+
+            
+
+            
 
             
             

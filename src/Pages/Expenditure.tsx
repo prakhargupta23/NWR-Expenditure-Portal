@@ -18,7 +18,7 @@ export default function Expenditure() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [openCsvModal, setOpenCsvModal] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'dashboard' | 'document' | 'review' | 'expanded'>('document');
+  const [selectedTab, setSelectedTab] = useState<'dashboard' | 'document' | 'review' | 'expanded'>('dashboard');
   const [expandedRow, setExpandedRow] = useState<DocumentRow | null>(null);
 
   const getBackground = () => {
