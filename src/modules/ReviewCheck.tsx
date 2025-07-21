@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox, Select, MenuItem } from '@mui/material';
 import { DocumentRow } from './expanded';
 import { expenditureService } from "../services/expenditure.service";
@@ -52,6 +52,24 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
   const [localReviewTimes, setLocalReviewTimes] = useState(allPoints.map(({ point }) => extractReviewer(point).reviewTime));
   const [textInputs, setTextInputs] = useState<string[]>(Array(allPoints.length).fill(''));
   const [loading, setLoading] = useState(false);
+  const [noteExists, setNoteExists] = useState(false);
+
+  useEffect(() => {
+    async function checkNotes() {
+      try {
+        const financeNote = await expenditureService.getNoteData('FinanceNote', row.SNo);
+        const rejectionNote = await expenditureService.getNoteData('RejectionNote', row.SNo);
+        if ((financeNote && financeNote.data) || (rejectionNote && rejectionNote.data)) {
+          setNoteExists(true);
+        } else {
+          setNoteExists(false);
+        }
+      } catch (err) {
+        setNoteExists(false);
+      }
+    }
+    checkNotes();
+  }, [row.SNo]);
 
   const handleCheckbox = (idx: number) => {
     setSelected(prev => prev.map((v, i) => (i === idx ? !v : v)));
@@ -237,11 +255,11 @@ const ReviewCheck: React.FC<ReviewCheckProps> = ({ row, transparent = false }) =
                 padding: '12px 32px',
                 borderRadius: '8px',
                 border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loading || noteExists ? 'not-allowed' : 'pointer',
                 boxShadow: '0 2px 8px rgba(25, 118, 210, 0.15)',
-                opacity: loading ? 0.7 : 1,
+                opacity: loading || noteExists ? 0.7 : 1,
               }}
-              disabled={loading}
+              disabled={loading || noteExists}
               onClick={handleUpdate}
             >
               {loading ? 'Updating...' : 'Update Observations'}

@@ -15,6 +15,7 @@ import {
 import { expenditureService } from "../services/expenditure.service";
 // import { takeUntil } from "rxjs";
 import { useMemo } from 'react';
+import Snackbar from '@mui/material/Snackbar';
 
 // Helper to extract status from row (Status or Remarks.Status)
 function extractStatus(row: DocumentRow) {
@@ -185,7 +186,7 @@ export default function Dashboard() {
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const dd = String(today.getDate()).padStart(2, '0');
   const defaultTo = `${yyyy}-${mm}-${dd}`;
-  const defaultFrom = `${yyyy}-${mm}-01`;
+  const defaultFrom = `${yyyy}-01-01`;
 
   const [statusCounts, setStatusCounts] = useState([
     { name: "Approved", count: 0 },
@@ -288,6 +289,9 @@ export default function Dashboard() {
       ]
     };
   }, [filteredRows]);
+
+  // Helper to check if fromDate and toDate are in the same year
+  const isSameYear = new Date(fromDate).getFullYear() === new Date(toDate).getFullYear();
 
   // 4. Compute filtered monthly data
   const filteredMonthlyData = useMemo(() => {
@@ -520,6 +524,28 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const handleFromDateChange = (value: string) => {
+    const newYear = new Date(value).getFullYear();
+    const toYear = new Date(toDate).getFullYear();
+    if (newYear !== toYear) {
+      setSnackbarMessage('From and To date should be of the same year.');
+      setSnackbarOpen(true);
+    }
+    setFromDate(value);
+  };
+  const handleToDateChange = (value: string) => {
+    const fromYear = new Date(fromDate).getFullYear();
+    const newYear = new Date(value).getFullYear();
+    if (fromYear !== newYear) {
+      setSnackbarMessage('From and To date should be of the same year.');
+      setSnackbarOpen(true);
+    }
+    setToDate(value);
+  };
+
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', mt: 5, p: 0, border: "1px solid rgba(255, 255, 255, 0)", }}>
       {/* Header */}
@@ -592,7 +618,7 @@ export default function Dashboard() {
                    type="date"
                    size="small"
                    value={fromDate}
-                   onChange={e => setFromDate(e.target.value)}
+                   onChange={e => handleFromDateChange(e.target.value)}
                    InputLabelProps={{ shrink: true }}
                    sx={{
                      '& .MuiOutlinedInput-root': {
@@ -617,7 +643,7 @@ export default function Dashboard() {
                    type="date"
                    size="small"
                    value={toDate}
-                   onChange={e => setToDate(e.target.value)}
+                   onChange={e => handleToDateChange(e.target.value)}
                    InputLabelProps={{ shrink: true }}
                    sx={{
                      '& .MuiOutlinedInput-root': {
@@ -639,7 +665,10 @@ export default function Dashboard() {
                  />
               </Box>
             </Grid>
-            
+          
+            {/* Hide all content below if not same year */}
+            {isSameYear && (
+            <>
             {/* Approved */}
             <Grid item xs={12} md={4}>
               <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
@@ -725,7 +754,7 @@ export default function Dashboard() {
             <Grid item xs={12} md={5}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, mb: 4, height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontSize: '1rem' }}>Document Status (Live)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontSize: '1rem' }}>Count Distribution</Typography>
                   {loading ? (
                     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
                       <CircularProgress />
@@ -775,21 +804,21 @@ export default function Dashboard() {
             </Grid>
 
 
-            {/* Line Chart for Amounts */}
+            {/* Line Chart */}
             <Grid item xs={12} md={7}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, p: 5, height: 270 }}>
                 <CardContent sx={{ p: 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0, fontSize: '1rem' }}>Current Year Monthly Trends (Amount)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 4, mt: 1, fontSize: '1rem' }}>Current Year Monthly Trends (Count)</Typography>
                   <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={filteredMonthlyData.monthlyAmountData}>
+                    <LineChart data={filteredMonthlyData.monthlyData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} formatter={v => `₹${v.toLocaleString()}`}/>
+                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} />
                       <Legend wrapperStyle={{ fontSize: '0.7rem' }} iconSize={10} />
-                      <Line type="monotone" dataKey="approved" stroke="#4caf50" strokeWidth={2} name="Approved Amount" />
-                      <Line type="monotone" dataKey="rejected" stroke="#f44336" strokeWidth={2} name="Rejected Amount" />
-                      <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} name="Total Amount" />
+                      <Line type="monotone" dataKey="documents" stroke="#8884d8" strokeWidth={2} />
+                      <Line type="monotone" dataKey="reviews" stroke="#00C49F" strokeWidth={2} />
+                      <Line type="monotone" dataKey="approvals" stroke="#FFBB28" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -802,7 +831,7 @@ export default function Dashboard() {
             <Grid item xs={12} md={5}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontSize: '1rem' }}>Amount Distribution (Approved vs Rejected)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontSize: '1rem' }}>Amount Distribution</Typography>
                   {loading ? (
                     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
                       <CircularProgress />
@@ -853,21 +882,23 @@ export default function Dashboard() {
               </Card>
             </Grid>
 
-            {/* Line Chart */}
+
+
+            {/* Line Chart for Amounts */}
             <Grid item xs={12} md={7}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, p: 5, height: 270 }}>
                 <CardContent sx={{ p: 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0, fontSize: '1rem' }}>Current Year Monthly Trends (Line Chart)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 4, mt: 1, fontSize: '1rem' }}>Current Year Monthly Trends (Amount)</Typography>
                   <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={filteredMonthlyData.monthlyData}>
+                    <LineChart data={filteredMonthlyData.monthlyAmountData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} />
+                      <Tooltip wrapperStyle={{ fontSize: '0.8rem' }} formatter={v => `₹${v.toLocaleString()}`}/>
                       <Legend wrapperStyle={{ fontSize: '0.7rem' }} iconSize={10} />
-                      <Line type="monotone" dataKey="documents" stroke="#8884d8" strokeWidth={2} />
-                      <Line type="monotone" dataKey="reviews" stroke="#00C49F" strokeWidth={2} />
-                      <Line type="monotone" dataKey="approvals" stroke="#FFBB28" strokeWidth={2} />
+                      <Line type="monotone" dataKey="approved" stroke="#4caf50" strokeWidth={2} name="Approved Amount" />
+                      <Line type="monotone" dataKey="rejected" stroke="#f44336" strokeWidth={2} name="Rejected Amount" />
+                      <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} name="Total Amount" />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -875,6 +906,8 @@ export default function Dashboard() {
             </Grid>
 
             
+            </>
+            )};
 
             
 
@@ -884,6 +917,13 @@ export default function Dashboard() {
           </Grid>
         </Box>
       </Box>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      />
     </Box>
   );
 }
