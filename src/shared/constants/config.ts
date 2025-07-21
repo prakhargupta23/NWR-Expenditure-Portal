@@ -2,7 +2,7 @@
 
 const dev = Object.freeze({
   apiUrl: "https://nwr-pension-2025.azurewebsites.net",
-  //apiUrl: "http://localhost:7071",
+  // apiUrl: "http://localhost:7071",
 });
 
 

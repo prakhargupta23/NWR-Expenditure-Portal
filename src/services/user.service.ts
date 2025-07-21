@@ -18,7 +18,7 @@ export const userService = {
 
 //// Funciton for creating new experiments ---------------------------/
 async function login(username: string, password: string) {
-  const portal = "Pension"
+  const portal = "expenditure"
   let response = await fetchWrapper.post(`${config.apiUrl}/api/login`, {
     username,
     password,
