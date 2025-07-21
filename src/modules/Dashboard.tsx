@@ -593,7 +593,7 @@ export default function Dashboard() {
             <Grid item xs={12} md={12}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, p: 5, mb: 0, height: 270 }}>
                 <CardContent sx={{ p: 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontSize: '1rem' }}>Current Week Activity (Bar + Line)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, fontSize: '1rem' }}>Current Week Activity (Bar)</Typography>
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={currentWeekData}>
                       <CartesianGrid strokeDasharray="3 3" />
