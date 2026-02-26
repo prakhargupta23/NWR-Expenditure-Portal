@@ -58,7 +58,7 @@ const parseMatchedUnmatched = (remark: string) => {
 const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   const [showReviewCheck, setShowReviewCheck] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { matched, unmatched} = parseMatchedUnmatched(row.Remark);
+  const { matched, unmatched } = parseMatchedUnmatched(row.Remark);
   const allPoints = [
     ...unmatched.map(point => ({ point, status: 'Mismatch' as const })),
     ...matched.map(point => ({ point, status: 'Match' as const })),
@@ -107,8 +107,8 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       return {
         text: fullMatch,
         reviewer: aiText,
-        reviewTime:firstVal,
-        reviewRemark:secondVal
+        reviewTime: firstVal,
+        reviewRemark: secondVal
       }
     }
     // Fallback: try to extract at least the reviewer
@@ -125,7 +125,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
   }
 
   if (showReviewCheck) {
-  return (
+    return (
       <Box sx={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'left', justifyContent: 'flex-start', pt: 2 }}>
         <Box sx={{ width: '100%', maxWidth: 500, display: 'flex', alignItems: 'center', mb: 2 }}>
           <Button onClick={async () => {
@@ -155,6 +155,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     setLoading(true);
     try {
       // Fetch all GST invoice data
+      console.log("Generate finance note", inputs)
       const gstDataFetched = await expenditureService.getGstInvoiceData();
       const gstDataArray = gstDataFetched.data;
       // Find the GST data object matching the current row's SNo
@@ -418,7 +419,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       console.log("Starting verification for row:", row);
       const response = await expenditureService.reportVerification(row);
       console.log("Verification response:", response);
-      
+
       // Ensure we're handling the response properly
       let status: "approved" | "rejected" = "rejected";
       let formattedRemark = '';
@@ -427,9 +428,9 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         // Check the status from the response object
         status = response.Status === "approved" || response.Status === "Approved" ? "approved" : "rejected";
         console.log("Determined status:", status, response.Status);
-        console.log("Matched results",response.MatchedResults)
-        console.log("Unmatched results",response.UnmatchedResults)
-        
+        console.log("Matched results", response.MatchedResults)
+        console.log("Unmatched results", response.UnmatchedResults)
+
         // Format the remarks as bulleted points if Results array exists
         if (response.MatchedResults && Array.isArray(response.MatchedResults)) {
           formattedRemark = [
@@ -439,7 +440,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
             'Matched Results',
             response.MatchedResults.map((result: string) => `• ${result}`).join('\n'),
           ].join('\n')
-          console.log("formatted remark",formattedRemark)
+          console.log("formatted remark", formattedRemark)
         } else if (response.Reason) {
           formattedRemark = response.Reason;
         }
@@ -459,10 +460,10 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
 
         // Update the backend
         await expenditureService.updateExpenditureData(updatedRow);
-        
+
         // Update the local row state
         Object.assign(row, updatedRow);
-        
+
         console.log("Row updated successfully");
       }
     } catch (error) {
@@ -508,7 +509,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-        {docFields.map(field => (
+            {docFields.map(field => (
               <TableRow key={field.key}>
                 <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{field.label}</TableCell>
                 <TableCell sx={{ color: '#fff', textAlign: 'center' }}>
@@ -567,7 +568,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
 
       <Box sx={{m:0,height: '50vh', overflowY: 'auto',position: 'relative'}}> */}
 
-        {/* <Typography sx={{color: '#f44336',fontWeight:700}}>Not Matching</Typography>
+      {/* <Typography sx={{color: '#f44336',fontWeight:700}}>Not Matching</Typography>
         <ul>
           {unmatched.map((point,idx) =>  <li key={idx}>{point}</li>)}
         </ul>
@@ -576,40 +577,40 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         <ul>
           {matched.map((point,idx) =>  <li key={idx}>{point}</li>)}
         </ul> */}
-          <Divider sx={{ mb: 2 }} />
-          {allPoints.length === 0 ? (
-            <Typography variant="body2" sx={{ color: '#444' }}>No review remarks available.</Typography>
-          ) : (
-          <>
-            <TableContainer sx={{ maxHeight: 500, overflowY: 'auto', background: "rgba(0, 0, 0, 0.5)" }}>
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Remarks</TableCell>
-                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
-                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
-                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Time</TableCell>
-                    <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Remark</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {allPoints.map(({ point, status }, idx) => {
-                    const { text, reviewer, reviewTime, reviewRemark } = extractReviewer(point);
-                    return (
+      <Divider sx={{ mb: 2 }} />
+      {allPoints.length === 0 ? (
+        <Typography variant="body2" sx={{ color: '#444' }}>No review remarks available.</Typography>
+      ) : (
+        <>
+          <TableContainer sx={{ maxHeight: 500, overflowY: 'auto', background: "rgba(0, 0, 0, 0.5)" }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Remarks</TableCell>
+                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Status</TableCell>
+                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Reviewed By</TableCell>
+                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Time</TableCell>
+                  <TableCell sx={{ background: '#000', color: '#fff', textAlign: 'center', fontWeight: 700 }}>Review Remark</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {allPoints.map(({ point, status }, idx) => {
+                  const { text, reviewer, reviewTime, reviewRemark } = extractReviewer(point);
+                  return (
                     <TableRow key={idx}>
-                        <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'left' }}>{text}</TableCell>
                       <TableCell sx={{ color: status === 'Match' ? '#4caf50' : '#f44336', textAlign: 'center', fontWeight: 700 }}>{status}</TableCell>
-                        <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewer}</TableCell>
-                        <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewTime}</TableCell>
-                        <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewRemark}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewer}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewTime}</TableCell>
+                      <TableCell sx={{ color: '#fff', textAlign: 'center', fontWeight: 700 }}>{reviewRemark}</TableCell>
                     </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-          )}
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
       {/* </Box> */}
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: '60%', mt: 5, pl: 25, pr: 10, }}>
         <Button
@@ -619,7 +620,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
             try {
               const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
               const noteData = noteDataResponse?.data;
-              console.log("jjj",noteDataResponse,noteData)
+              console.log("jjj", noteDataResponse, noteData)
               if (noteData) {
                 // If data is present, use it to generate the PDF
                 const financeInputs = {
@@ -628,6 +629,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                   otherDeductions: noteData.Otherdedunctions || '',
                   netPayment: noteData.NetPayment || ''
                 };
+                console.log("finance inputs", financeInputs)
                 await handlePassAndGenerate(financeInputs);
               } else {
                 // If no data, open the dialog to take inputs
@@ -644,83 +646,83 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         >
           {loading ? 'Processing...' : 'Pass & Generate Finance Note'}
         </Button>
-        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#FF3B3F', color: '#fff',}}
-  onClick={async () => {
-    setLoading(true);
-    try {
-      const noteDataResponse = await expenditureService.getNoteData('RejectionNote', row.SNo);
-      const noteData = noteDataResponse?.data;
-      if (noteData) {
-        // If data is present, map it to the reasons/remarks and generate the PDF
-        const mappedReasons = [
-          { reason: returnReasons[0], remark: noteData.MA || '' },
-          { reason: returnReasons[1], remark: noteData.GSTR2A || '' },
-          { reason: returnReasons[2], remark: noteData.CopyTaxIC || '' },
-          { reason: returnReasons[3], remark: noteData.InvoiceMismatch || '' },
-          { reason: returnReasons[4], remark: noteData.Refund || '' },
-          { reason: returnReasons[5], remark: noteData.InvoiceCO6 || '' },
-        ];
-        await handleRejectAndGeneratePDF(mappedReasons);
-      } else {
-        // If no data, open the dialog to take inputs
-        setOpenReturnModal(true);
-      }
-    } catch (err) {
-      // On error, fallback to opening the dialog
-      setOpenReturnModal(true);
-    } finally {
-      setLoading(false);
-    }
-  }}
-  disabled={loading || row.Status !== 'rejected'}>
-  {loading ? 'Processing...' : 'Reject & Generate Return Note'}
-</Button>
+        <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#FF3B3F', color: '#fff', }}
+          onClick={async () => {
+            setLoading(true);
+            try {
+              const noteDataResponse = await expenditureService.getNoteData('RejectionNote', row.SNo);
+              const noteData = noteDataResponse?.data;
+              if (noteData) {
+                // If data is present, map it to the reasons/remarks and generate the PDF
+                const mappedReasons = [
+                  { reason: returnReasons[0], remark: noteData.MA || '' },
+                  { reason: returnReasons[1], remark: noteData.GSTR2A || '' },
+                  { reason: returnReasons[2], remark: noteData.CopyTaxIC || '' },
+                  { reason: returnReasons[3], remark: noteData.InvoiceMismatch || '' },
+                  { reason: returnReasons[4], remark: noteData.Refund || '' },
+                  { reason: returnReasons[5], remark: noteData.InvoiceCO6 || '' },
+                ];
+                await handleRejectAndGeneratePDF(mappedReasons);
+              } else {
+                // If no data, open the dialog to take inputs
+                setOpenReturnModal(true);
+              }
+            } catch (err) {
+              // On error, fallback to opening the dialog
+              setOpenReturnModal(true);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading || row.Status !== 'rejected'}>
+          {loading ? 'Processing...' : 'Reject & Generate Return Note'}
+        </Button>
         <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#6A5ACD', color: '#fff', }} onClick={() => setShowReviewCheck(true)}>Review & Update Observatons</Button>
       </Box>
       <Dialog open={openFinanceModal} onClose={() => setOpenFinanceModal(false)} PaperProps={{
-  sx: {
-    borderRadius: 4,
-    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-    boxShadow: 24,
-    p: 0,
-    minWidth: 400,
-    maxWidth: 500,
-  }
-}}>
-  <DialogTitle sx={{
-    fontWeight: 700,
-    fontSize: '1.3rem',
-    color: '#222',
-    background: 'rgba(0,0,0,0.04)',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    pb: 1.5,
-    pt: 2,
-    px: 3
-  }}>
-    Enter Finance Note Details
-  </DialogTitle>
-  <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
-  <DialogContent sx={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-    background: 'rgba(255,255,255,0.85)',
-    px: 3,
-    py: 2,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16
-  }}>
-    <TextField
-      label="Bill Passed Vide CO6 No."
-      fullWidth
-      margin="dense"
-      variant="outlined"
-      value={financeInputs.co6No}
-      onChange={e => setFinanceInputs({ ...financeInputs, co6No: e.target.value })}
-      sx={{ background: '#f7fafd', borderRadius: 2 }}
-    />
-    <TextField
+        sx: {
+          borderRadius: 4,
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          boxShadow: 24,
+          p: 0,
+          minWidth: 400,
+          maxWidth: 500,
+        }
+      }}>
+        <DialogTitle sx={{
+          fontWeight: 700,
+          fontSize: '1.3rem',
+          color: '#222',
+          background: 'rgba(0,0,0,0.04)',
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          pb: 1.5,
+          pt: 2,
+          px: 3
+        }}>
+          Enter Finance Note Details
+        </DialogTitle>
+        <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
+        <DialogContent sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          background: 'rgba(255,255,255,0.85)',
+          px: 3,
+          py: 2,
+          borderBottomLeftRadius: 16,
+          borderBottomRightRadius: 16
+        }}>
+          <TextField
+            label="Bill Passed Vide CO6 No."
+            fullWidth
+            margin="dense"
+            variant="outlined"
+            value={financeInputs.co6No}
+            onChange={e => setFinanceInputs({ ...financeInputs, co6No: e.target.value })}
+            sx={{ background: '#f7fafd', borderRadius: 2 }}
+          />
+          {/* <TextField
       label="Liquidated Damages (L.D)"
       fullWidth
       margin="dense"
@@ -728,150 +730,152 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       value={financeInputs.ld}
       onChange={e => setFinanceInputs({ ...financeInputs, ld: e.target.value })}
       sx={{ background: '#f7fafd', borderRadius: 2 }}
-    />
-    <TextField
-      label="Other Deductions (if any)"
-      fullWidth
-      margin="dense"
-      variant="outlined"
-      value={financeInputs.otherDeductions}
-      onChange={e => setFinanceInputs({ ...financeInputs, otherDeductions: e.target.value })}
-      sx={{ background: '#f7fafd', borderRadius: 2 }}
-    />
-    <TextField
-      label="Net Payment Recommended"
-      fullWidth
-      margin="dense"
-      variant="outlined"
-      value={financeInputs.netPayment}
-      onChange={e => setFinanceInputs({ ...financeInputs, netPayment: e.target.value })}
-      sx={{ background: '#f7fafd', borderRadius: 2 }}
-    />
-  </DialogContent>
-  <DialogActions sx={{
-    background: 'rgba(0,0,0,0.04)',
-    px: 3,
-    py: 2,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: 2
-  }}>
-    <Button onClick={() => setOpenFinanceModal(false)} sx={{ color: '#555', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
-    <Button
-      onClick={async () => {
-        setOpenFinanceModal(false);
-        // Prepare the finance note data object
-        const financeNoteData = {
-          SNo: row.SNo,
-          co6No: financeInputs.co6No,
-          ld: financeInputs.ld,
-          sd: null,
-          otherDeductions: financeInputs.otherDeductions,
-          netPayment: financeInputs.netPayment
-        };
-        // Send to backend
-        try {
-          await expenditureService.putNoteData(financeNoteData, 'FinanceNote');
-          // Update expenditure data with NoteGeneration
-          console.log("updating note generation")
-          await expenditureService.updateExpenditureData({ ...row, NoteGeneration: 'FinanceNote' });
-        } catch (err) {
-          console.error('Error saving finance note:', err);
+    /> */}
+          <TextField
+            label="Other Deductions (if any)"
+            fullWidth
+            margin="dense"
+            variant="outlined"
+            value={financeInputs.otherDeductions}
+            onChange={e => setFinanceInputs({ ...financeInputs, otherDeductions: e.target.value })}
+            sx={{ background: '#f7fafd', borderRadius: 2 }}
+          />
+          <TextField
+            label="Net Payment Recommended"
+            fullWidth
+            margin="dense"
+            variant="outlined"
+            value={financeInputs.netPayment}
+            onChange={e => setFinanceInputs({ ...financeInputs, netPayment: e.target.value })}
+            sx={{ background: '#f7fafd', borderRadius: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{
+          background: 'rgba(0,0,0,0.04)',
+          px: 3,
+          py: 2,
+          borderBottomLeftRadius: 16,
+          borderBottomRightRadius: 16,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 2
+        }}>
+          <Button onClick={() => setOpenFinanceModal(false)} sx={{ color: '#555', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
+          <Button
+            onClick={async () => {
+              setOpenFinanceModal(false);
+              // Prepare the finance note data object
+              let financeNoteData = {
+                SNo: row.SNo,
+                co6No: financeInputs.co6No,
+                // ld: financeInputs.ld,
+                sd: null,
+                otherDeductions: financeInputs.otherDeductions,
+                netPayment: financeInputs.netPayment
+              };
+              // Send to backend
+              try {
+                await expenditureService.putNoteData(financeNoteData, 'FinanceNote');
+                // Update expenditure data with NoteGeneration
+                console.log("updating note generation")
+                await expenditureService.updateExpenditureData({ ...row, NoteGeneration: 'FinanceNote' });
+                financeNoteData = await expenditureService.getNoteData('FinanceNote', row.SNo);
+                console.log("first time finance note genration", financeNoteData)
+              } catch (err) {
+                console.error('Error saving finance note:', err);
+              }
+              // Then generate the PDF
+              handlePassAndGenerate(financeNoteData);
+            }}
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(90deg, #00D1FF 0%, #00C49F 100%)',
+              color: '#fff',
+              fontWeight: 700,
+              borderRadius: 2,
+              px: 3,
+              boxShadow: '0 2px 8px rgba(0,209,255,0.08)'
+            }}
+          >
+            Generate
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={openReturnModal} onClose={() => setOpenReturnModal(false)} PaperProps={{
+        sx: {
+          borderRadius: 4,
+          background: 'linear-gradient(135deg, #fff1f0 0%, #f7d9d9 100%)',
+          boxShadow: 24,
+          p: 0,
+          minWidth: 400,
+          maxWidth: 500,
         }
-        // Then generate the PDF
-        handlePassAndGenerate(financeInputs);
-      }}
-      variant="contained"
-      sx={{
-        background: 'linear-gradient(90deg, #00D1FF 0%, #00C49F 100%)',
-        color: '#fff',
-        fontWeight: 700,
-        borderRadius: 2,
-        px: 3,
-        boxShadow: '0 2px 8px rgba(0,209,255,0.08)'
-      }}
-    >
-      Generate
-    </Button>
-  </DialogActions>
-</Dialog>
-<Dialog open={openReturnModal} onClose={() => setOpenReturnModal(false)} PaperProps={{
-  sx: {
-    borderRadius: 4,
-    background: 'linear-gradient(135deg, #fff1f0 0%, #f7d9d9 100%)',
-    boxShadow: 24,
-    p: 0,
-    minWidth: 400,
-    maxWidth: 500,
-  }
-}}>
-  <DialogTitle sx={{
-    fontWeight: 700,
-    fontSize: '1.3rem',
-    color: '#b71c1c',
-    background: 'rgba(255,0,0,0.04)',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    pb: 1.5,
-    pt: 2,
-    px: 3
-  }}>
-    Enter Return Note Reasons
-  </DialogTitle>
-  <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
-  <DialogContent sx={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-    background: 'rgba(255,255,255,0.85)',
-    px: 3,
-    py: 2,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16
-  }}>
-    {returnInputs.map((item, idx) => (
-      <Box key={idx} sx={{ mb: 2 }}>
-        <Typography variant="body2" sx={{ color: '#b71c1c', fontWeight: 500, mb: 0.5 }}>{item.reason}</Typography>
-        <TextField
-          placeholder="Enter remark"
-          value={item.remark}
-          onChange={e => handleReturnRemarkChange(idx, e.target.value)}
-          fullWidth
-          size="small"
-          sx={{ background: '#fff', borderRadius: 2 }}
-        />
-      </Box>
-    ))}
-  </DialogContent>
-  <DialogActions sx={{
-    background: 'rgba(255,0,0,0.04)',
-    px: 3,
-    py: 2,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: 2
-  }}>
-    <Button onClick={() => setOpenReturnModal(false)} sx={{ color: '#b71c1c', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
-    <Button
-      onClick={handleReturnModalSubmit}
-      variant="contained"
-      sx={{
-        background: 'linear-gradient(90deg, #FF3B3F 0%, #FFBABA 100%)',
-        color: '#fff',
-        fontWeight: 700,
-        borderRadius: 2,
-        px: 3,
-        boxShadow: '0 2px 8px rgba(255,59,63,0.08)'
-      }}
-    >
-      Generate
-    </Button>
-  </DialogActions>
-</Dialog>
+      }}>
+        <DialogTitle sx={{
+          fontWeight: 700,
+          fontSize: '1.3rem',
+          color: '#b71c1c',
+          background: 'rgba(255,0,0,0.04)',
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          pb: 1.5,
+          pt: 2,
+          px: 3
+        }}>
+          Enter Return Note Reasons
+        </DialogTitle>
+        <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
+        <DialogContent sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          background: 'rgba(255,255,255,0.85)',
+          px: 3,
+          py: 2,
+          borderBottomLeftRadius: 16,
+          borderBottomRightRadius: 16
+        }}>
+          {returnInputs.map((item, idx) => (
+            <Box key={idx} sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ color: '#b71c1c', fontWeight: 500, mb: 0.5 }}>{item.reason}</Typography>
+              <TextField
+                placeholder="Enter remark"
+                value={item.remark}
+                onChange={e => handleReturnRemarkChange(idx, e.target.value)}
+                fullWidth
+                size="small"
+                sx={{ background: '#fff', borderRadius: 2 }}
+              />
+            </Box>
+          ))}
+        </DialogContent>
+        <DialogActions sx={{
+          background: 'rgba(255,0,0,0.04)',
+          px: 3,
+          py: 2,
+          borderBottomLeftRadius: 16,
+          borderBottomRightRadius: 16,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 2
+        }}>
+          <Button onClick={() => setOpenReturnModal(false)} sx={{ color: '#b71c1c', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
+          <Button
+            onClick={handleReturnModalSubmit}
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(90deg, #FF3B3F 0%, #FFBABA 100%)',
+              color: '#fff',
+              fontWeight: 700,
+              borderRadius: 2,
+              px: 3,
+              boxShadow: '0 2px 8px rgba(255,59,63,0.08)'
+            }}
+          >
+            Generate
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
