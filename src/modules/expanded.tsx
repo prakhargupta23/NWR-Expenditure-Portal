@@ -623,6 +623,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
               console.log("jjj", noteDataResponse, noteData)
               if (noteData) {
                 // If data is present, use it to generate the PDF
+                console.log("if statement ")
                 const financeInputs = {
                   co6No: noteData.CO6No || '',
                   ld: noteData.Ld || '',
@@ -634,12 +635,40 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
               } else {
                 // If no data, open the dialog to take inputs
                 setOpenFinanceModal(true);
+                // const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
+                // console.log("else statement")
+                // const noteData = noteDataResponse?.data;
+                // console.log("fetch data", noteData)
+                // if
+                // const financeInputs = {
+                //   co6No: noteData.CO6No || '',
+                //   ld: noteData.Ld || '',
+                //   otherDeductions: noteData.Otherdedunctions || '',
+                //   netPayment: noteData.NetPayment || ''
+                // };
+                // console.log("finance inputs1", financeInputs)
+                // await handlePassAndGenerate(financeInputs)
+
               }
             } catch (err) {
               // On error, fallback to opening the dialog
               setOpenFinanceModal(true);
+              console.log("catch error", err)
             } finally {
               setLoading(false);
+              console.log("finally statement")
+              const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
+              const noteData = noteDataResponse?.data;
+              console.log("note data", noteData)
+              const financeInputs = {
+                co6No: noteData.CO6No || '',
+                ld: noteData.Ld || '',
+                otherDeductions: noteData.Otherdedunctions || '',
+                netPayment: noteData.NetPayment || ''
+              };
+              console.log("finance inputs2", financeInputs)
+              await handlePassAndGenerate(financeInputs)
+              console.log("finally finished")
             }
           }}
           disabled={loading || row.Status !== 'approved'}
