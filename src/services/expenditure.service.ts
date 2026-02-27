@@ -98,6 +98,7 @@ export const expenditureService = {
   // Get GST invoice data
   getGstInvoiceData: async () => {
     try {
+      console.log("getching data")
       const response = await axios.get(`${config.apiUrl}/api/get-gstinvoice-data`);
       console.log("fetched GST invoice data", response.data);
       return response.data;
