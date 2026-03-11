@@ -794,7 +794,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
             onClick={async () => {
               setOpenFinanceModal(false);
               // Prepare the finance note data object
-              let financeNoteData = {
+              let financeNotePayload = {
                 SNo: row.SNo,
                 co6No: financeInputs.co6No,
                 // ld: financeInputs.ld,
@@ -802,19 +802,29 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
                 otherDeductions: financeInputs.otherDeductions,
                 netPayment: financeInputs.netPayment
               };
+              let finalInputsForNote = { ...financeInputs };
               // Send to backend
               try {
-                await expenditureService.putNoteData(financeNoteData, 'FinanceNote');
+                await expenditureService.putNoteData(financeNotePayload, 'FinanceNote');
                 // Update expenditure data with NoteGeneration
                 console.log("updating note generation")
                 await expenditureService.updateExpenditureData({ ...row, NoteGeneration: 'FinanceNote' });
-                financeNoteData = await expenditureService.getNoteData('FinanceNote', row.SNo);
-                console.log("first time finance note genration", financeNoteData)
+                const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
+                const noteData = noteDataResponse?.data;
+                console.log("first time finance note genration", noteData);
+                if (noteData) {
+                  finalInputsForNote = {
+                    co6No: noteData.CO6No || '',
+                    ld: noteData.Ld || '',
+                    otherDeductions: noteData.Otherdedunctions || '',
+                    netPayment: noteData.NetPayment || ''
+                  };
+                }
               } catch (err) {
                 console.error('Error saving finance note:', err);
               }
               // Then generate the PDF
-              handlePassAndGenerate(financeNoteData);
+              await handlePassAndGenerate(finalInputsForNote);
             }}
             variant="contained"
             sx={{
