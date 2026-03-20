@@ -156,6 +156,9 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     try {
       // Fetch all GST invoice data
       console.log("Generate finance note", inputs)
+      const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
+      const noteData = noteDataResponse?.data;
+      console.log("this time note data", noteData)
       const gstDataFetched = await expenditureService.getGstInvoiceData();
       const gstDataArray = gstDataFetched.data;
       // Find the GST data object matching the current row's SNo
@@ -189,15 +192,18 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       const tableRows = [
         { no: '1.', detail: 'Purchase Order (P.O.) Number', key: 'PONo' },
         { no: '2.', detail: 'Consignee', key: 'Consignee' },
-        { no: '3.', detail: 'Bill Passed Vide CO6 No.', value: inputs?.co6No || '' },
-        { no: '4.', detail: 'Invoice Number & Date', key: '' },
-        { no: '5.', detail: 'Receipt Note Number', key: 'RNoteNo' },
-        { no: '6.', detail: 'Material Received On', key: 'InvoiceDate' },
-        { no: '7.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
-        { no: '8.', detail: 'Liquidated Damages (L.D)', value: inputs?.ld || '' },
-        { no: '9.', detail: 'Security Deposit (S.D)', key: 'Security' },
-        { no: '10.', detail: 'Other Deductions (if any)', value: inputs?.otherDeductions || '' },
-        { no: '11.', detail: 'Net Payment Recommended', value: inputs?.netPayment || '' },
+        { no: '3.', detail: 'Invoice Number & Date', key: '' },
+        { no: '4.', detail: 'Receipt Note Number', key: 'RNoteNo' },
+        { no: '5.', detail: 'Material Received On', key: 'InvoiceDate' },
+        { no: '6.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
+        { no: '7.', detail: 'Rate', value: noteData?.Rate || '' },
+        { no: '8.', detail: 'Basic', value: noteData?.Basic || '' },
+        { no: '9.', detail: 'Gross', value: noteData?.Gross || '' },
+        { no: '10.', detail: 'Liquidated Damages (L.D)', value: noteData?.Ld || '' },
+        { no: '11.', detail: 'Security Deposit (S.D)', key: 'Security' },
+        { no: '12.', detail: 'Income Tax', value: noteData?.IncomeTax || '' },
+        { no: '13.', detail: 'TDS', value: noteData?.TDS || '' },
+        { no: '14.', detail: 'Net Payment Recommended', value: noteData?.NetPayment || '' },
       ];
       doc.setFont('helvetica', 'normal');
       tableRows.forEach((rowItem, idx) => {
