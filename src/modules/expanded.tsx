@@ -64,13 +64,13 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     ...matched.map(point => ({ point, status: 'Match' as const })),
   ];
 
-  const [openFinanceModal, setOpenFinanceModal] = useState(false);
-  const [financeInputs, setFinanceInputs] = useState({
-    co6No: '',
-    ld: '',
-    otherDeductions: '',
-    netPayment: ''
-  });
+  // const [openFinanceModal, setOpenFinanceModal] = useState(false);
+  // const [financeInputs, setFinanceInputs] = useState({
+  //   co6No: '',
+  //   ld: '',
+  //   otherDeductions: '',
+  //   netPayment: ''
+  // });
 
   const returnReasons = [
     "Manufacturer’s Authorization (MA) required for Delivery Period extension — please attach.",
@@ -156,7 +156,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
     try {
       // Fetch all GST invoice data
       console.log("Generate finance note", inputs)
-      const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
+      const noteDataResponse = await expenditureService.putNoteData(row, 'FinanceNote');
       const noteData = noteDataResponse?.data;
       console.log("this time note data", noteData)
       const gstDataFetched = await expenditureService.getGstInvoiceData();
@@ -168,21 +168,21 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       const rightPad = 190;
       let y = 25;
       // Heading
-      doc.setFontSize(20);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text('Approval Note', leftPad, y);
       y += 14;
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
       doc.text('Subject: Approval for Payment Processing', leftPad, y);
       y += 16;
       // Table header with shaded background
       doc.setFillColor(230, 230, 250);
       doc.rect(leftPad, y - 7, rightPad - leftPad, 10, 'F');
-      doc.setFontSize(12);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('Sr. No.', leftPad + 2, y);
-      doc.text('Details', leftPad + 28, y);
+      doc.text('Details', leftPad + 20, y);
       doc.text('Remarks', leftPad + 95, y);
       y += 7;
       doc.setLineWidth(0.5);
@@ -191,21 +191,23 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
       // Table rows
       const tableRows = [
         { no: '1.', detail: 'Purchase Order (P.O.) Number', key: 'PONo' },
-        { no: '2.', detail: 'Consignee', key: 'Consignee' },
-        { no: '3.', detail: 'Invoice Number & Date', key: '' },
-        { no: '4.', detail: 'Receipt Note Number', key: 'RNoteNo' },
-        { no: '5.', detail: 'Material Received On', key: 'InvoiceDate' },
-        { no: '6.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
-        { no: '7.', detail: 'Rate', value: noteData?.Rate || '' },
-        { no: '8.', detail: 'Basic', value: noteData?.Basic || '' },
-        { no: '9.', detail: 'Gross', value: noteData?.Gross || '' },
-        { no: '10.', detail: 'Liquidated Damages (L.D)', value: noteData?.Ld || '' },
-        { no: '11.', detail: 'Security Deposit (S.D)', key: 'Security' },
-        { no: '12.', detail: 'Income Tax', value: noteData?.IncomeTax || '' },
-        { no: '13.', detail: 'TDS', value: noteData?.TDS || '' },
-        { no: '14.', detail: 'Net Payment Recommended', value: noteData?.NetPayment || '' },
+        { no: '2.', detail: 'Supplier Name', value: noteData?.Supplier || '' },
+        { no: '3.', detail: 'Consignee', value: noteData?.Consignee || '' },
+        { no: '4.', detail: 'Invoice Number & Date', key: '' },
+        { no: '5.', detail: 'Receipt Note Number', key: 'RNoteNo' },
+        { no: '6.', detail: 'Material Received On', key: 'InvoiceDate' },
+        { no: '7.', detail: 'Quantity Accepted', key: 'QtyAccepted' },
+        { no: '8.', detail: 'Rate', value: noteData?.Rate || '' },
+        { no: '9.', detail: 'Basic', value: noteData?.Basic || '' },
+        { no: '10.', detail: 'Gross', value: noteData?.Gross || '' },
+        { no: '11.', detail: 'Liquidated Damages (L.D)', value: noteData?.Ld || '' },
+        { no: '12.', detail: 'Security Deposit (S.D)', key: 'Security' },
+        { no: '13.', detail: 'Income Tax', value: noteData?.IncomeTax || '' },
+        { no: '14.', detail: 'TDS', value: noteData?.TDS || '' },
+        { no: '15.', detail: 'Net Payment Recommended', value: noteData?.NetPayment || '' },
       ];
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
       tableRows.forEach((rowItem, idx) => {
         let remarks = '';
         if (rowItem.value !== undefined) {
@@ -220,7 +222,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
           remarks = `${matchedGstData['InvoiceNo'] || ''} ${matchedGstData['InvoiceDate'] || ''}`.trim();
         }
         doc.text(rowItem.no, leftPad + 2, y);
-        doc.text(rowItem.detail, leftPad + 28, y);
+        doc.text(rowItem.detail, leftPad + 20, y);
         doc.setTextColor(80, 80, 80);
         doc.text(remarks, leftPad + 95, y);
         doc.setTextColor(0, 0, 0);
@@ -622,60 +624,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         <Button
           sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#00D1FF', color: '#fff', }}
           onClick={async () => {
-            setLoading(true);
-            try {
-              const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
-              const noteData = noteDataResponse?.data;
-              console.log("jjj", noteDataResponse, noteData)
-              if (noteData) {
-                // If data is present, use it to generate the PDF
-                console.log("if statement ")
-                const financeInputs = {
-                  co6No: noteData.CO6No || '',
-                  ld: noteData.Ld || '',
-                  otherDeductions: noteData.Otherdedunctions || '',
-                  netPayment: noteData.NetPayment || ''
-                };
-                console.log("finance inputs", financeInputs)
-                await handlePassAndGenerate(financeInputs);
-              } else {
-                // If no data, open the dialog to take inputs
-                setOpenFinanceModal(true);
-                // const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
-                // console.log("else statement")
-                // const noteData = noteDataResponse?.data;
-                // console.log("fetch data", noteData)
-                // if
-                // const financeInputs = {
-                //   co6No: noteData.CO6No || '',
-                //   ld: noteData.Ld || '',
-                //   otherDeductions: noteData.Otherdedunctions || '',
-                //   netPayment: noteData.NetPayment || ''
-                // };
-                // console.log("finance inputs1", financeInputs)
-                // await handlePassAndGenerate(financeInputs)
-
-              }
-            } catch (err) {
-              // On error, fallback to opening the dialog
-              setOpenFinanceModal(true);
-              console.log("catch error", err)
-            } finally {
-              setLoading(false);
-              console.log("finally statement")
-              const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
-              const noteData = noteDataResponse?.data;
-              console.log("note data", noteData)
-              const financeInputs = {
-                co6No: noteData.CO6No || '',
-                ld: noteData.Ld || '',
-                otherDeductions: noteData.Otherdedunctions || '',
-                netPayment: noteData.NetPayment || ''
-              };
-              console.log("finance inputs2", financeInputs)
-              await handlePassAndGenerate(financeInputs)
-              console.log("finally finished")
-            }
+            await handlePassAndGenerate();
           }}
           disabled={loading || row.Status !== 'approved'}
         >
@@ -714,138 +663,7 @@ const Expanded: React.FC<ExpandedProps> = ({ row, onClose }) => {
         </Button>
         <Button sx={{ flex: 1, fontWeight: 700, fontSize: "0.9rem", p: 1, borderRadius: 4, background: '#6A5ACD', color: '#fff', }} onClick={() => setShowReviewCheck(true)}>Review & Update Observatons</Button>
       </Box>
-      <Dialog open={openFinanceModal} onClose={() => setOpenFinanceModal(false)} PaperProps={{
-        sx: {
-          borderRadius: 4,
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-          boxShadow: 24,
-          p: 0,
-          minWidth: 400,
-          maxWidth: 500,
-        }
-      }}>
-        <DialogTitle sx={{
-          fontWeight: 700,
-          fontSize: '1.3rem',
-          color: '#222',
-          background: 'rgba(0,0,0,0.04)',
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-          pb: 1.5,
-          pt: 2,
-          px: 3
-        }}>
-          Enter Finance Note Details
-        </DialogTitle>
-        <Divider sx={{ mb: 0, background: '#e0e0e0' }} />
-        <DialogContent sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          background: 'rgba(255,255,255,0.85)',
-          px: 3,
-          py: 2,
-          borderBottomLeftRadius: 16,
-          borderBottomRightRadius: 16
-        }}>
-          <TextField
-            label="Bill Passed Vide CO6 No."
-            fullWidth
-            margin="dense"
-            variant="outlined"
-            value={financeInputs.co6No}
-            onChange={e => setFinanceInputs({ ...financeInputs, co6No: e.target.value })}
-            sx={{ background: '#f7fafd', borderRadius: 2 }}
-          />
-          {/* <TextField
-      label="Liquidated Damages (L.D)"
-      fullWidth
-      margin="dense"
-      variant="outlined"
-      value={financeInputs.ld}
-      onChange={e => setFinanceInputs({ ...financeInputs, ld: e.target.value })}
-      sx={{ background: '#f7fafd', borderRadius: 2 }}
-    /> */}
-          <TextField
-            label="Other Deductions (if any)"
-            fullWidth
-            margin="dense"
-            variant="outlined"
-            value={financeInputs.otherDeductions}
-            onChange={e => setFinanceInputs({ ...financeInputs, otherDeductions: e.target.value })}
-            sx={{ background: '#f7fafd', borderRadius: 2 }}
-          />
-          <TextField
-            label="Net Payment Recommended"
-            fullWidth
-            margin="dense"
-            variant="outlined"
-            value={financeInputs.netPayment}
-            onChange={e => setFinanceInputs({ ...financeInputs, netPayment: e.target.value })}
-            sx={{ background: '#f7fafd', borderRadius: 2 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{
-          background: 'rgba(0,0,0,0.04)',
-          px: 3,
-          py: 2,
-          borderBottomLeftRadius: 16,
-          borderBottomRightRadius: 16,
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 2
-        }}>
-          <Button onClick={() => setOpenFinanceModal(false)} sx={{ color: '#555', fontWeight: 600, borderRadius: 2 }}>Cancel</Button>
-          <Button
-            onClick={async () => {
-              setOpenFinanceModal(false);
-              // Prepare the finance note data object
-              let financeNotePayload = {
-                SNo: row.SNo,
-                co6No: financeInputs.co6No,
-                // ld: financeInputs.ld,
-                sd: null,
-                otherDeductions: financeInputs.otherDeductions,
-                netPayment: financeInputs.netPayment
-              };
-              let finalInputsForNote = { ...financeInputs };
-              // Send to backend
-              try {
-                await expenditureService.putNoteData(financeNotePayload, 'FinanceNote');
-                // Update expenditure data with NoteGeneration
-                console.log("updating note generation")
-                await expenditureService.updateExpenditureData({ ...row, NoteGeneration: 'FinanceNote' });
-                const noteDataResponse = await expenditureService.getNoteData('FinanceNote', row.SNo);
-                const noteData = noteDataResponse?.data;
-                console.log("first time finance note genration", noteData);
-                if (noteData) {
-                  finalInputsForNote = {
-                    co6No: noteData.CO6No || '',
-                    ld: noteData.Ld || '',
-                    otherDeductions: noteData.Otherdedunctions || '',
-                    netPayment: noteData.NetPayment || ''
-                  };
-                }
-              } catch (err) {
-                console.error('Error saving finance note:', err);
-              }
-              // Then generate the PDF
-              await handlePassAndGenerate(finalInputsForNote);
-            }}
-            variant="contained"
-            sx={{
-              background: 'linear-gradient(90deg, #00D1FF 0%, #00C49F 100%)',
-              color: '#fff',
-              fontWeight: 700,
-              borderRadius: 2,
-              px: 3,
-              boxShadow: '0 2px 8px rgba(0,209,255,0.08)'
-            }}
-          >
-            Generate
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Removed Finance Note Dialog as note is now generated directly */}
       <Dialog open={openReturnModal} onClose={() => setOpenReturnModal(false)} PaperProps={{
         sx: {
           borderRadius: 4,
